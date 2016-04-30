@@ -5,11 +5,13 @@ Created on Fri Apr 29 12:15:28 2016
 @author: minxu
 """
 from bs4 import BeautifulSoup
+import requests
 import Person
 import zhihu_login
 import jieba
 import jieba.analyse
 import threading
+import re
 
 class userThread (threading.Thread):
     def __init__(self, uid):
@@ -23,19 +25,27 @@ zhihu_url = "https://www.zhihu.com"
 profile_url = zhihu_url + "/settings/profile"
 profile = zhihu_login.session.get(profile_url).text
 
-userlist =["song-shu-shan-lao-nong"] # ["song-shu-shan-lao-nong", "zhengkun-dai", "bai-xiao-yu-95", "chen-woo","a-la-ding-jiang-jun"]
+userlist = ["min-xu-26", "song-shu-shan-lao-nong", "zhengkun-dai", "bai-xiao-yu-95", "chen-woo","a-la-ding-jiang-jun"]
 userdict = dict()
 userworddict =dict()
 
 def analyze_user(uid):
     person = Person.Person(uid, zhihu_login.session)
+    userdict[uid] = person
     all_words = ""
-    answers = person.get_answers()
+    connected = False
+    while not connected:
+        try:
+            answers = person.get_timelines()
+            connected = True
+        except requests.ConnectionError:
+            continue
+        else:
+            connected = True
+
     for i in answers:
         all_words = all_words + i
-    
-    userdict[uid] = person
-    userworddict[uid] = jieba.analyse.extract_tags(all_words, topK=20, withWeight=False, allowPOS=())
+    userworddict[uid] = ','.join(jieba.analyse.extract_tags(all_words, topK=50, withWeight=False, allowPOS=()))
 
 
 #soup = BeautifulSoup(profile)
@@ -56,8 +66,7 @@ for t in threads:
 
 for user in userworddict:
     print user + "'s most frequent words:"
-    for w in userworddict[user]:
-        print w
-    
-    print '\n\n'
+    print userworddict[user]
+    print '\n'
+
 
