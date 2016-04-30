@@ -38,10 +38,8 @@ def analyze_user(uid):
         try:
             answers = person.get_timelines()
             connected = True
-        except requests.ConnectionError:
+        except:
             continue
-        else:
-            connected = True
 
     for i in answers:
         all_words = all_words + i
