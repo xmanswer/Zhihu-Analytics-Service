@@ -3,14 +3,6 @@
 Required
 - requests (必须)
 - pillow (可选)
-Info
-- author : "xchaoinfo"
-- email  : "xchaoinfo@qq.com"
-- date   : "2016.2.4"
-Update
-- name   : "wangmengcn"
-- email  : "eclipse_sv@163.com"
-- date   : "2016.4.21"
 '''
 import requests
 import cookielib
