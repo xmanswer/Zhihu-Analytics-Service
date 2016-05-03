@@ -32,18 +32,29 @@ userworddict =dict()
 def analyze_user(uid):
     person = Person.Person(uid, zhihu_login.session)
     userdict[uid] = person
-    all_words = ""
+    all_answers = ""
+    all_timelines = ""
     connected = False
     while not connected:
         try:
-            answers = person.get_timelines()
+            answers = person.get_answers()
             connected = True
         except:
             continue
-
+    connected = False
+    while not connected:
+        try:
+            timelines = person.get_timelines()
+            connected = True
+        except:
+            continue
+        
     for i in answers:
-        all_words = all_words + i
-    userworddict[uid] = ','.join(jieba.analyse.extract_tags(all_words, topK=50, withWeight=False, allowPOS=()))
+        all_answers = all_answers + i
+    for i in timelines:
+        all_timelines = all_timelines + i
+    
+    userworddict[uid] = (all_answers, all_timelines)
 
 
 #soup = BeautifulSoup(profile)
@@ -64,7 +75,10 @@ for t in threads:
 
 for user in userworddict:
     print user + "'s most frequent words:"
-    print userworddict[user]
+    answer_keywords = ','.join(jieba.analyse.extract_tags(userworddict[user][0], topK=50, withWeight=False, allowPOS=('ns', 'n', 'vn', 'v')))
+    timeline_keywords = ','.join(jieba.analyse.extract_tags(userworddict[user][1], topK=50, withWeight=False, allowPOS=('ns', 'n', 'vn', 'v')))
+    print answer_keywords
+    print timeline_keywords
     print '\n'
 
 
