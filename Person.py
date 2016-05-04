@@ -6,20 +6,55 @@ Created on Fri Apr 29 13:02:27 2016
 
 A Person class for user information crawled from zhihu.com
 
-constructor: specify user_id and login session
+constructor: specify user_id and login session, db is optional for database 
+storage type, default is None (file storage type)
 
-evaluate: evaluate fields in multi-threading
+features:
+multiple fields for user information, multi-threading crawling and data
+generation, options for storing data to disk (json) or database (MongoDB)
 
-flush: flush the information of this user to disk
+constructor: 
+specify user_id and login session
 
+methods:
+evaluate(): evaluate fields in multi-threading
+flush(): flush all information for this user to file/database depending on 
+the storage mode
+
+fields:
+    fields = {
+        'uid' : user_id,
+        'url' : user_profile_url,
+        'agrees' : number_of_agrees,
+        'thanks' : number_of_thanks,
+        'followees' : [list_of_followees],
+        'followers' :  [list_of_followers],
+        'answers' : [list_of_dicts_for_user_answers {
+                        'url' : answer_url,
+                        'text' : answer_text,
+                        'qid' : question_id,
+                        'aid' : answer_id,
+        
+        }],
+        'timelines' : [list_of_dicts_for_timeline_answers {
+                        'url' : answer_url,
+                        'text' : answer_text,
+                        'qid' : question_id,
+                        'aid' : answer_id,
+        
+        }],
+        'questions' : set_of_question_ids 
+    }
 """
+
 from bs4 import BeautifulSoup
 import re
 import requests
-import Question
 import json
 import os
 import threading
+import pymongo
+
 
 subdir = '/users/'
 zhihu_url = "https://www.zhihu.com"
@@ -30,14 +65,25 @@ TOP = 300
 
 class Person:
 
-    def __init__(self, uid, session):
+    def __init__(self, uid, session, db = None):
         self.uid = uid
         self.session = session
         self.url = zhihu_url + '/people/' + uid
-        self.personal_soup = BeautifulSoup(session.get(self.url).text)
+        self.db = db
+        print 'create user ' + self.uid
     
     #evaluate fields in multi-threading
-    def evaluate(self):
+    def evaluate(self):   
+        if check_person(self.uid, self.db):
+            return False
+            
+        connected = False
+        while not connected:
+            try:
+                self.personal_soup = BeautifulSoup(self.session.get(self.url).text)
+                connected = True
+            except:
+                continue
         connected = False
         while not connected:
             try:
@@ -45,6 +91,9 @@ class Person:
                 connected = True
             except:
                 continue
+        
+        self.questions = set()
+        
         threads = []
         
         threads.append(self.methodThread(self.get_agrees()))
@@ -57,6 +106,8 @@ class Person:
             t.start()
         for t in threads:
             t.join()
+        
+        return True
     
     #child class for multi-thread evaluating different fields        
     class methodThread (threading.Thread):
@@ -74,10 +125,33 @@ class Person:
                     continue
             return res
     
-    #flush the information of this user to disk
+    #wrapper for flush all information for this question to file/database 
+    #depending on the storage mode 
     def flush(self):
+        if self.db is None:
+            self.flush_to_file()
+        else:
+            self.flush_to_db()
+    
+    #flush data to database
+    def flush_to_db(self):
         self.get_avatar()
-        json_dict = {
+        try:
+            self.db.users.insert_one(self.construct_data())        
+        except pymongo.errors.DuplicateKeyError:
+            return
+    
+    #flush data to file in json format
+    def flush_to_file(self):
+        self.get_avatar()
+        json_dict = self.construct_data()
+        with open(os.getcwd() + subdir + self.uid + '.json', 'w') as f:
+            json.dump(json_dict, f, indent=4)    
+    
+    #flush the information of this user to disk
+    def construct_data(self):
+        data = {
+            '_id' : self.uid, #for MongoDB
             'uid' : self.uid,
             'url' : self.url,
             'agrees' : self.agrees,
@@ -85,10 +159,10 @@ class Person:
             'followees' : self.followees,
             'followers' :  self.followers,
             'answers' : self.answers,
-            'timelines' : self.timelines
+            'timelines' : self.timelines,
+            'questions' : list(self.questions)
         }
-        with open(os.getcwd() + subdir + self.uid + '.json', 'w') as f:
-            json.dump(json_dict, f, indent=4)
+        return data
         
     #get total number of followees and followers
     def get_friends_num(self):
@@ -179,9 +253,7 @@ class Person:
             for a in asoup.findAll('div', class_="zm-item-rich-text expandable js-collapse-body"):
                 answer = self.construct_answer(a)
                 answers.append(answer)
-                if not Question.check_question(answer['qid']):
-                    question = Question.Question(answer['qid'])
-                    question.flush()       
+                self.questions.add(answer['qid']) 
                 
         self.answers = answers
     
@@ -215,9 +287,7 @@ class Person:
         for a in BeautifulSoup(response_html).findAll('div', class_="zm-item-rich-text expandable js-collapse-body"):
             answer = self.construct_answer(a)
             timelines.append(answer)
-            if not Question.check_question(answer['qid']):
-                question = Question.Question(answer['qid'])
-                question.flush()   
+            self.questions.add(answer['qid']) 
         
         while total < TOP and response_size > 0:
             data_times = re.findall(r"data-time=\"\d+\"", response_html)
@@ -235,9 +305,8 @@ class Person:
             for a in BeautifulSoup(response_html).findAll('div', class_="zm-item-rich-text expandable js-collapse-body"):
                 answer = self.construct_answer(a)
                 timelines.append(answer)
-                if not Question.check_question(answer['qid']):
-                    question = Question.Question(answer['qid'])
-                    question.flush()      
+                self.questions.add(answer['qid'])
+                
         self.timelines = timelines
     
     #help method for constructing an answer structure
@@ -252,3 +321,11 @@ class Person:
             'aid' : a_url_arr[4],
         }
         return answer
+
+
+#check if this question object exists in database or file
+def check_person(uid, db = None):
+    if db is None:
+        return os.path.exists(os.getcwd() + subdir + uid + '.json')
+    else:
+        return db.users.find({'_id' : uid}).count() != 0
