@@ -45,12 +45,6 @@ import pymongo
 zhihu_url = "https://www.zhihu.com"
 subdir = '/questions/'
 
-#check if this question object exists in database or file
-def check_question(qid, db = None):
-    if db is None:
-        return os.path.exists(os.getcwd() + subdir + qid + '.json')
-    else:
-        return db.questions.find({'_id' : qid}).count() != 0
 
 class Question:
     
@@ -152,3 +146,10 @@ class Question:
                 'aid' : aid
             }
             self.answers.append(answer)
+
+#check if this question object exists in database or file
+def check_question(qid, db = None):
+    if db is None:
+        return os.path.exists(os.getcwd() + subdir + qid + '.json')
+    else:
+        return db.questions.find({'_id' : qid}).count() != 0
