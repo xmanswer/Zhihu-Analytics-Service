@@ -7,11 +7,44 @@ Created on Fri Apr 29 13:02:27 2016
 A Person class for user information crawled from zhihu.com
 
 constructor: specify user_id and login session
+features:
+multiple fields for user information, multi-threading crawling and data
+generation, options for storing data to disk (json) or database (MongoDB)
 
 evaluate: evaluate fields in multi-threading
+constructor: 
+specify user_id and login session
 
 flush: flush the information of this user to disk
+methods:
+evaluate(): evaluate fields in multi-threading
+flush_to_disk(): flush the information of this user to disk in json format
+flush_to_db(): flush the information of this user to MongoDB
 
+fields:
+    fields = {
+        'uid' : user_id,
+        'url' : user_profile_url,
+        'agrees' : number_of_agrees,
+        'thanks' : number_of_thanks,
+        'followees' : [list_of_followees],
+        'followers' :  [list_of_followers],
+        'answers' : [list_of_dicts_for_user_answers {
+                        'url' : answer_url,
+                        'text' : answer_text,
+                        'qid' : question_id,
+                        'aid' : answer_id,
+        
+        }],
+        'timelines' : [list_of_dicts_for_timeline_answers {
+                        'url' : answer_url,
+                        'text' : answer_text,
+                        'qid' : question_id,
+                        'aid' : answer_id,
+        
+        }],
+        'questions' : set_of_question_ids 
+    }
 """
 from bs4 import BeautifulSoup
 import re
