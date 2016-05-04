@@ -137,7 +137,7 @@ class Person:
     def flush_to_db(self):
         self.get_avatar()
         try:
-            self.db.questions.insert_one(self.construct_data())        
+            self.db.users.insert_one(self.construct_data())        
         except pymongo.errors.DuplicateKeyError:
             return
     

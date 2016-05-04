@@ -16,7 +16,7 @@ def create_user(uid):
 
 client = pymongo.MongoClient()
 db = client.zhihu
-db.users.delete_one({"uid" : "min-xu-26"})
+#db.users.delete_one({"uid" : "min-xu-26"})
 me = Person('min-xu-26', zhihu_login.session, db)
 if me.evaluate():
     me.flush()
@@ -24,7 +24,4 @@ if me.evaluate():
 followees = me.followees
 
 pool = ThreadPool(10)
-
-for u in followees:
-    pool.map(create_user, u)
-        
+pool.map(create_user, followees)
