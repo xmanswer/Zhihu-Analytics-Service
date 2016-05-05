@@ -1,48 +1,52 @@
 # -*- coding: utf-8 -*-
 '''
 Required
-- requests (必须)
-- pillow (可选)
+- requests
+- pillow
 '''
 import requests
 import cookielib
 import re
 import time
 import os.path
-try:
-    from PIL import Image
-except:
-    pass
+from PIL import Image
+import random
 
+main_dir = os.path.realpath('..')
 
-# 构造 Request headers
-agent = 'Mozilla/5.0 (Windows NT 5.1; rv:33.0) Gecko/20100101 Firefox/33.0'
+#Request headers
+#agent = 'Mozilla/5.0 (Windows NT 5.1; rv:33.0) Gecko/20100101 Firefox/33.0'
+agents = []
+with open(main_dir + '/user-agents.txt') as f:
+    for l in f:
+        agents.append(l.strip())
+agent = random.choice(agents)
 headers = {
     'User-Agent': agent
 }
 
-# 使用登录cookie信息
+#use cookie to login
 session = requests.session()
-session.cookies = cookielib.LWPCookieJar(filename='cookies')
+session.cookies = cookielib.LWPCookieJar(filename= main_dir + '/cookies')
 try:
     session.cookies.load(ignore_discard=True)
 except:
-    print "Cookie 未能加载"
+    print "Cookie not loaded"
 
 
 def get_xsrf():
-    '''_xsrf 是一个动态变化的参数'''
+    '''_xsrf is a dynamic parameter'''
     index_url = 'http://www.zhihu.com'
-    # 获取登录时需要用到的_xsrf
+    # get _xsrf for login
     index_page = session.get(index_url, headers=headers)
     html = index_page.text
     pattern = r'name="_xsrf" value="(.*?)"'
-    # 这里的_xsrf 返回的是一个list
+    # _xsrf is a list
     _xsrf = re.findall(pattern, html)
     return _xsrf[0]
 
 
-# 获取验证码
+# get verification code
 def get_captcha():
     t = str(int(time.time()*1000))
     captcha_url = 'http://www.zhihu.com/captcha.gif?r' + t + "&type=login"
@@ -50,20 +54,16 @@ def get_captcha():
     with open('captcha.jpg', 'wb') as f:
         f.write(r.content)
         f.close()
-    # 用pillow 的 Image 显示验证码
-    # 如果没有安装 pillow 到源代码所在的目录去找到验证码然后手动输入
-    try:
-        im = Image.open('captcha.jpg')
-        im.show()
-        im.close()
-    except:
-        print u'请到 %s 目录找到captcha.jpg 手动输入' % os.path.abspath('captcha.jpg')
+    #pillow.Image will show up verification image
+    im = Image.open('captcha.jpg')
+    im.show()
+    im.close()
+
     captcha = input("please input the captcha\n>")
     return captcha
 
-
 def isLogin():
-    # 通过查看用户个人信息来判断是否已经登录
+    #identify login by checking personel page
     url = "https://www.zhihu.com/settings/profile"
     login_code = session.get(url,allow_redirects=False).status_code
     if int(x=login_code) == 200:
@@ -71,12 +71,10 @@ def isLogin():
     else:
         return False
 
-
-
 def login(secret, account):
-    # 通过输入的用户名判断是否是手机号
+    # identify if it is cellphone or email login
     if re.match(r"^1\d{10}$", account):
-        print "手机号登录 \n"
+        print "cell phone number login \n"
         post_url = 'http://www.zhihu.com/login/phone_num'
         postdata = {
             '_xsrf': get_xsrf(),
@@ -85,7 +83,7 @@ def login(secret, account):
             'phone_num': account,
         }
     else:
-        print "邮箱登录 \n"
+        print "email login \n"
         post_url = 'http://www.zhihu.com/login/email'
         postdata = {
             '_xsrf': get_xsrf(),
@@ -94,18 +92,29 @@ def login(secret, account):
             'email': account,
         }
     try:
-        # 不需要验证码直接登录成功
+        #no verification code
         login_page = session.post(post_url, data=postdata, headers=headers)
         login_code = login_page.text
         print login_page.status
         print login_code
     except:
-        # 需要输入验证码后才能登录成功
+        #require verification code
         postdata["captcha"] = get_captcha()
         login_page = session.post(post_url, data=postdata, headers=headers)
         login_code = eval(login_page.text)
         print login_code['msg']
+    
+    #save cookies for future use
     session.cookies.save()
+
+def get_session(p_c = 10, p_m = 10, m_r = 100, p_b = False):
+    adapter = requests.adapters.HTTPAdapter(pool_connections=p_c, \
+        pool_maxsize=p_m, max_retries=m_r, pool_block = p_b)
+    session.mount('https://', adapter)
+    return session
+
+def get_agents():
+    return agents
 
 try:
     input = raw_input
@@ -115,7 +124,7 @@ except:
 
 if __name__ == '__main__':
     if isLogin():
-        print '您已经登录'
+        print 'login successful'
     else:
         account = input("username email\n>  ")
         secret = input("password\n>  ")

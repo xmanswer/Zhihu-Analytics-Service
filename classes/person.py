@@ -27,6 +27,8 @@ fields:
         'url' : user_profile_url,
         'agrees' : number_of_agrees,
         'thanks' : number_of_thanks,
+        'followers_num': self.followers_num,
+        'followees_num' : self.followees_num,
         'followees' : [list_of_followees],
         'followers' :  [list_of_followers],
         'answers' : [list_of_dicts_for_user_answers {
@@ -54,50 +56,43 @@ import json
 import os
 import threading
 import pymongo
+import time
+import random
 
-
+__DEBUG__ = False
+main_dir = os.path.realpath('..')
+LOG = main_dir + '/logs/'
 subdir = '/users/'
 zhihu_url = "https://www.zhihu.com"
 friends_url_dict = {'/followees' : 'ProfileFolloweesListV2', 
                     '/followers' : 'ProfileFollowersListV2'}
-
-TOP = 300
+#user_agent = 'Mozilla/5.0 (Windows NT 5.1; rv:33.0) Gecko/20100101 Firefox/33.0'
+user_agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0"
+TOP = 100
+TIMEOUT = 20
+SLEEPTIME = 0.01
 
 class Person:
 
-    def __init__(self, uid, session, db = None):
+    def __init__(self, uid, session, user_agents = [user_agent], proxies = None, db = None):
         self.uid = uid
         self.session = session
         self.url = zhihu_url + '/people/' + uid
         self.db = db
-        print 'create user ' + self.uid
+        self.user_agents = user_agents
+        self.proxies = proxies
+        self.log = open(LOG + uid + '.log', 'w')
     
     #evaluate fields in multi-threading
-    def evaluate(self):   
-        if check_person(self.uid, self.db):
-            return False
-            
-        connected = False
-        while not connected:
-            try:
-                self.personal_soup = BeautifulSoup(self.session.get(self.url).text)
-                connected = True
-            except:
-                continue
-        connected = False
-        while not connected:
-            try:
-                self.get_friends_num()
-                connected = True
-            except:
-                continue
-        
+    def evaluate(self):
+        self.personal_soup = BeautifulSoup(self.reliable_get(self.url))
+        self.get_friends_num()
         self.questions = set()
         
         threads = []
         
         threads.append(self.methodThread(self.get_agrees()))
-        threads.append(self.methodThread(self.get_followers()))
+        #threads.append(self.methodThread(self.get_followers()))
         threads.append(self.methodThread(self.get_followees()))
         threads.append(self.methodThread(self.get_answers()))
         threads.append(self.methodThread(self.get_timelines()))
@@ -106,24 +101,15 @@ class Person:
             t.start()
         for t in threads:
             t.join()
-        
-        return True
-    
+            
     #child class for multi-thread evaluating different fields        
     class methodThread (threading.Thread):
         def __init__(self, method):
             threading.Thread.__init__(self)
             self.method = method
-            self.connected = False
     
         def run(self):
-            while not self.connected:
-                try:
-                    res = self.method
-                    self.connected = True
-                except:
-                    continue
-            return res
+            return self.method
     
     #wrapper for flush all information for this question to file/database 
     #depending on the storage mode 
@@ -132,7 +118,8 @@ class Person:
             self.flush_to_file()
         else:
             self.flush_to_db()
-    
+        self.log.close()
+        
     #flush data to database
     def flush_to_db(self):
         self.get_avatar()
@@ -145,8 +132,8 @@ class Person:
     def flush_to_file(self):
         self.get_avatar()
         json_dict = self.construct_data()
-        with open(os.getcwd() + subdir + self.uid + '.json', 'w') as f:
-            json.dump(json_dict, f, indent=4)    
+        with open(main_dir + subdir + self.uid + '.json', 'w') as f:
+            json.dump(json_dict, f, indent=4)
     
     #flush the information of this user to disk
     def construct_data(self):
@@ -156,8 +143,10 @@ class Person:
             'url' : self.url,
             'agrees' : self.agrees,
             'thanks' : self.thanks,
+            'followers_num': self.followers_num,
+            'followees_num' : self.followees_num,
             'followees' : self.followees,
-            'followers' :  self.followers,
+            #'followers' :  self.followers,
             'answers' : self.answers,
             'timelines' : self.timelines,
             'questions' : list(self.questions)
@@ -187,7 +176,7 @@ class Person:
     #get friends (followers or followees) list of user ids
     def get_friends(self, num, friend_type):
         furl = self.url + friend_type
-        fpage = self.session.get(furl).text
+        fpage = self.reliable_get(furl)
         fsoup = BeautifulSoup(fpage)
         flist = []
         for i in xrange((num - 1) / 20 + 1):
@@ -207,12 +196,13 @@ class Person:
                     'params': params
                 }
                 header = {
-                    'User-Agent': "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0",
+                    #'User-Agent': ,
+                    'User-Agent' : random.choice(self.user_agents),
                     'Host': "www.zhihu.com",
                     'Referer': furl
                 }
                 
-                r_post = self.session.post(post_url, data=data, headers=header)
+                r_post = self.reliable_post(post_url, data, header)
                 extenedlist = r_post.json()["msg"]
                 
                 for j in xrange(min(num - i * 20, 20)):
@@ -226,14 +216,16 @@ class Person:
         soup = self.personal_soup
         avatar = soup.find("div", class_="zm-profile-header ProfileCard").find( \
         "img", class_="Avatar Avatar--l")["src"]
-        r = requests.get(avatar, stream=True)
-        with open("figures/img_" + self.uid + ".png", 'wb') as f:
+        r = requests.get(avatar, stream=True, timeout = TIMEOUT, proxies = {
+                        'https': random.choice(self.proxies)                    
+                    })
+        with open(main_dir + "/figures/" + self.uid + ".png", 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024):
                 f.write(chunk)
         
     #get all answer texts, return a list of answer texts
     def get_answers(self):
-        asoup = BeautifulSoup(self.session.get(self.url + '/answers?page=1').text)
+        asoup = BeautifulSoup(self.reliable_get(self.url + '/answers?page=1'))
         pagesection = asoup.find("div",  class_="zm-invite-pager")
         pagesize = 0
         answers = []
@@ -249,7 +241,7 @@ class Person:
         
         #get answer texts for each page
         for i in range(1, pagesize + 1):
-            asoup = BeautifulSoup(self.session.get(self.url + '/answers?page=' + str(i)).text)
+            asoup = BeautifulSoup(self.reliable_get(self.url + '/answers?page=' + str(i)))
             for a in asoup.findAll('div', class_="zm-item-rich-text expandable js-collapse-body"):
                 answer = self.construct_answer(a)
                 answers.append(answer)
@@ -275,12 +267,12 @@ class Person:
         header = {
             'Host': "www.zhihu.com",
             'Referer': self.url,
-            'User-Agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36",
+            'User-Agent': random.choice(self.user_agents),
         }
         
         #accumulate response_size to total, quit crawling timeline texts once
         #no more response or number of docs exceeds threshold value
-        r = self.session.post(post_url, data=data, headers=header)
+        r = self.reliable_post(post_url, data, header)
         response_size = r.json()["msg"][0]
         total = total + response_size
         response_html = r.json()["msg"][1]
@@ -298,7 +290,7 @@ class Person:
                 'start': latest_data_time,
                 '_xsrf': _xsrf,
             }
-            r = self.session.post(post_url, data=data, headers=header)
+            r = self.reliable_post(post_url, data, header)
             response_size = r.json()["msg"][0]
             total = total + response_size
             response_html = r.json()["msg"][1]
@@ -321,11 +313,58 @@ class Person:
             'aid' : a_url_arr[4],
         }
         return answer
-
-
+    
+    #a reliable get method, will keep trying is fail, change proxy everytime
+    def reliable_get(self, url):
+        connected = False
+        while not connected:
+            try:
+                r = self.session.get(url, timeout = TIMEOUT, proxies = {
+                        'https': random.choice(self.proxies)
+                    }).text
+                time.sleep(SLEEPTIME)
+                connected = True
+            except Exception as e: 
+                if __DEBUG__:
+                    print self.uid, url, e
+                self.log.write(url + ' ' + str(e) + '\n')
+        return r
+    
+    #a reliable post method, will keep trying is fail, change proxy everytime
+    def reliable_post(self, url, data, header):
+        connected = False
+        while not connected:
+            try:
+                r = self.session.post(url, data=data, headers=header, \
+                    timeout = TIMEOUT, proxies = {
+                        'https': random.choice(self.proxies)                    
+                    })
+                time.sleep(SLEEPTIME)
+                connected = True
+            except Exception as e: 
+                if __DEBUG__:
+                    print self.uid, url, e
+                self.log.write(url + ' ' + str(e) + '\n')
+        return r        
+        
 #check if this question object exists in database or file
 def check_person(uid, db = None):
     if db is None:
-        return os.path.exists(os.getcwd() + subdir + uid + '.json')
+        return os.path.exists(main_dir + subdir + uid + '.json')
     else:
         return db.users.find({'_id' : uid}).count() != 0
+
+#crawl the Person with given uid to disk, return the dictionary for this person
+def crawl_person(uid, session, user_agents = [user_agent], proxies = None, db = None):
+    if not check_person(uid, db):
+        print 'creating user ' + uid
+        p = Person(uid, session, user_agents, proxies, db)
+        p.evaluate()
+        p.flush()
+        print 'created user ' + uid
+        
+    if db is not None:
+        return db.users.find_one({"_id" : uid})
+    else:
+        with open(main_dir + subdir + uid + '.json') as f: 
+            return json.load(f)
