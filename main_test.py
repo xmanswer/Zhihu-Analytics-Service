@@ -8,20 +8,22 @@ import pymongo
 from Person import Person
 import zhihu_login
 from multiprocessing.pool import ThreadPool
+import thread
 
 def create_user(uid):
-    person = Person(uid, zhihu_login.session, db)
+    person = Person(uid, session, db)
     if person.evaluate():
         person.flush()
 
 client = pymongo.MongoClient()
 db = client.zhihu
 #db.users.delete_one({"uid" : "min-xu-26"})
-me = Person('min-xu-26', zhihu_login.session, db)
+session = zhihu_login.get_session()
+me = Person('min-xu-26', session, db)
 if me.evaluate():
     me.flush()
 
-followees = me.followees
+me = db.users.find_one({"uid" : "min-xu-26"})
 
-pool = ThreadPool(10)
-pool.map(create_user, followees)
+pool = ThreadPool(200)
+pool.map(create_user, me['followees'])
