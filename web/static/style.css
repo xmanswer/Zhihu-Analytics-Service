@@ -1,0 +1,21 @@
+body            { font-family: sans-serif; background: #eee; }
+a, h1, h2       { color: #377ba8; }
+h1, h2          { font-family: 'Georgia', serif; margin: 0; }
+h1              { border-bottom: 2px solid #eee; }
+h2              { font-size: 1.2em; }
+
+.page           { margin: 3em auto; width: 80em; border: 5px solid #ccc;
+                  padding: 1em; background: black; color: white;}
+.user           { list-style: none; margin: 0; padding: 0; background: black; color: white; text-align: center;}
+.user h2        { margin: 1em 1.5em; background: black; color: white; text-align: center;}
+.user h4        { margin: 1em 1.5em; background: black; color: white; text-align: center;}
+.data h1        { margin: 1em 1.5em; background: black; color: white; text-align: center;}
+.data h3        { margin: 1em 1.5em; background: black; color: white; text-align: center;}
+.data h4        { margin: 1em 1.5em; background: black; color: white; text-align: center;}
+.add-person      { font-size: 0.9em; border-bottom: 1px solid #ccc; }
+.add-person dl   { font-weight: bold; }
+.metanav        { text-align: right; font-size: 0.8em; padding: 0.3em;
+                  margin-bottom: 1em; background: #fafafa; }
+.flash          { background: #cee5F5; padding: 0.5em;
+                  border: 1px solid #aacbe2; }
+.error          { background: #f0d6d6; padding: 0.5em; }

@@ -13,7 +13,7 @@ rawProxyList = []
 checkedProxyList = []
 #抓取代理网站
 targets = []
-for i in xrange(1,10):
+for i in xrange(1,3):
         target = r"http://www.proxy.com.ru/list_%d.html" % i
         targets.append(target)
         
@@ -93,8 +93,8 @@ def get_proxies():
     print '.'*10+"crawled %s proxies" %len(rawProxyList) +'.'*10
 
     #开启20个线程负责校验，将抓取到的代理分成20份，每个线程校验一份
-    for i in range(20):
-        t = ProxyCheck(rawProxyList[((len(rawProxyList)+19)/20) * i:((len(rawProxyList)+19)/20) * (i+1)])
+    for i in range(50):
+        t = ProxyCheck(rawProxyList[((len(rawProxyList)+49)/50) * i:((len(rawProxyList)+49)/50) * (i+1)])
         checkThreads.append(t)
     for i in range(len(checkThreads)):
         checkThreads[i].start()

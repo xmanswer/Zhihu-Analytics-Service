@@ -25,6 +25,7 @@ fields:
     fields = {
         'uid' : user_id,
         'url' : user_profile_url,
+        'name' : user_zhihu_name,
         'agrees' : number_of_agrees,
         'thanks' : number_of_thanks,
         'followers_num': self.followers_num,
@@ -60,6 +61,8 @@ import time
 import random
 
 __DEBUG__ = False
+__LOG__ = False
+
 main_dir = os.path.realpath('..')
 LOG = main_dir + '/logs/'
 subdir = '/users/'
@@ -92,6 +95,7 @@ class Person:
         threads = []
         
         threads.append(self.methodThread(self.get_agrees()))
+        threads.append(self.methodThread(self.get_name()))
         #threads.append(self.methodThread(self.get_followers()))
         threads.append(self.methodThread(self.get_followees()))
         threads.append(self.methodThread(self.get_answers()))
@@ -141,6 +145,7 @@ class Person:
             '_id' : self.uid, #for MongoDB
             'uid' : self.uid,
             'url' : self.url,
+            'name' : self.name,
             'agrees' : self.agrees,
             'thanks' : self.thanks,
             'followers_num': self.followers_num,
@@ -165,6 +170,10 @@ class Person:
         self.agrees = int(soup.find("span", class_="zm-profile-header-user-agree").strong.string)
         self.thanks = int(soup.find("span", class_="zm-profile-header-user-thanks").strong.string)
     
+    def get_name(self):    
+        soup = self.personal_soup
+        self.name = soup.find('div', class_="top-nav-profile").find('span', class_="name").string
+        
     #wrapper for getting followers
     def get_followers(self):
         self.followers = self.get_friends(self.followers_num, '/followers')
@@ -172,7 +181,7 @@ class Person:
     #wrapper for getting followees
     def get_followees(self):
         self.followees = self.get_friends(self.followees_num, '/followees')
-        
+    
     #get friends (followers or followees) list of user ids
     def get_friends(self, num, friend_type):
         furl = self.url + friend_type
@@ -241,6 +250,8 @@ class Person:
         
         #get answer texts for each page
         for i in range(1, pagesize + 1):
+            if len(answers) > TOP: 
+                break
             asoup = BeautifulSoup(self.reliable_get(self.url + '/answers?page=' + str(i)))
             for a in asoup.findAll('div', class_="zm-item-rich-text expandable js-collapse-body"):
                 answer = self.construct_answer(a)
@@ -327,7 +338,8 @@ class Person:
             except Exception as e: 
                 if __DEBUG__:
                     print self.uid, url, e
-                self.log.write(url + ' ' + str(e) + '\n')
+                if __LOG__:
+                    self.log.write(url + ' ' + str(e) + '\n')
         return r
     
     #a reliable post method, will keep trying is fail, change proxy everytime
@@ -344,7 +356,8 @@ class Person:
             except Exception as e: 
                 if __DEBUG__:
                     print self.uid, url, e
-                self.log.write(url + ' ' + str(e) + '\n')
+                if __LOG__:
+                    self.log.write(url + ' ' + str(e) + '\n')
         return r        
         
 #check if this question object exists in database or file
