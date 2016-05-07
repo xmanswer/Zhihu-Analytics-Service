@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block body %}
+  <ul class=user>
+    <h2>user id: {{ user.uid }}</h2>
+    <h4>agrees: {{ user.agrees }}</h4>
+    <h4>thanks: {{ user.thanks }}</h4>
+    <form action="{{ url_for('get_text') }}" method="get" class=get_text>
+      <input type="hidden" name="uid" value="{{user.uid}}">
+      <button name="attri" type="submit" value="followees">followees</button>
+      <button name="attri" type="submit" value="timelines">timelines</button>
+      <button name="attri" type="submit" value="answers">answers</button>
+      <button name="attri" type="submit" value="questions">questions</button>
+    </form>
+  </ul>
+
+{% endblock %}

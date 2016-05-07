@@ -41,38 +41,63 @@ import os
 import os.path
 import json
 import pymongo
+import random
 
+__DEBUG__ = False
+__LOG__ = False
+
+main_dir = os.path.realpath('..')
 zhihu_url = "https://www.zhihu.com"
 subdir = '/questions/'
+LOG = main_dir + '/logs/'
+TIMEOUT = 20
+user_agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0"
+SLEEPTIME = 0.01
 
 
 class Question:
     
-    def __init__(self, qid, session, db = None):
+    def __init__(self, qid, session, user_agents = [user_agent], proxies = None, db = None):
         self.url = zhihu_url + '/question/' + qid
         self.qid = qid
         self.session = session
         self.db = db
+        self.user_agents = user_agents
+        self.proxies = proxies
+        self.log = open(LOG + self.qid + '.log', 'w')
     
     #evaluate all fields from the responded html for this question
     def evaluate(self):
-        if check_question(self.qid, self.db):
-            return False
-            
         connected = False
         while not connected:
             try:
-                self.soup = BeautifulSoup(self.session.get(self.url).text)
+                self.soup = BeautifulSoup(self.session.get(self.url, \
+                    timeout = TIMEOUT, proxies = {
+                        'https': random.choice(self.proxies)                    
+                    }).text)
                 connected = True
-            except:
-                continue
+            except Exception as e: 
+                if __DEBUG__:
+                    print self.qid, e
+                if __LOG__:
+                    self.log.write(str(e) + '\n')
         
-        self.get_anum()
-        self.get_title()
-        self.get_question()
-        self.get_labels()
-        self.get_answers()
-        return True
+        try:
+            self.get_title()
+        except AttributeError as e:
+            if __DEBUG__:
+                print self.qid, e
+            if __LOG__:
+                self.log.write(str(e) + '\n')
+            self.title = '404'
+        
+        if self.title is not '404':
+            self.get_question()
+            self.get_labels()
+            self.get_answers()
+            self.get_anum()
+        else:
+            self.question, self.labels, self.answers, self.anum = '404', [], [], 0
     
     #wrapper for flush all information for this question to file/database 
     #depending on the storage mode 
@@ -81,6 +106,7 @@ class Question:
             self.flush_to_file()
         else:
             self.flush_to_db()
+        self.log.close()
     
     #flush data to database
     def flush_to_db(self):
@@ -92,7 +118,7 @@ class Question:
     #flush data to file in json format
     def flush_to_file(self):
         json_dict = self.construct_data()
-        with open(os.getcwd() + subdir + self.qid + '.json', 'w') as f:
+        with open(main_dir + subdir + self.qid + '.json', 'w') as f:
             json.dump(json_dict, f, indent=4)
     
     #construct data in dictionary type
@@ -111,7 +137,11 @@ class Question:
     
     #get number of answers
     def get_anum(self):
-        self.anum = int(self.soup.find('h3', id = "zh-question-answer-num")['data-num'])
+        qn = self.soup.find('h3', id = "zh-question-answer-num")
+        if qn is not None:
+            self.anum = int(qn['data-num'])
+        else:
+            self.anum = len(self.answers)
     
     #get the question title text
     def get_title(self):
@@ -120,9 +150,14 @@ class Question:
         
     #get the question details text
     def get_question(self):
-        self.question = self.soup.find('div', id = "zh-question-detail"). \
-            find('div', class_ = "zm-editable-content").text.strip()
-    
+        qd = self.soup.find('div', id = "zh-question-detail"). \
+            find('div', class_ = "zm-editable-content")
+        if qd is not None:
+            self.question = qd.text.strip()
+        else:
+            self.question = self.soup.find('div', id = "zh-question-detail"). \
+                find('textarea', class_ = "content").text.strip()
+            
     #get a list of topic labels associated
     def get_labels(self):
         self.labels = []
@@ -137,19 +172,39 @@ class Question:
             url = a.find('link', itemprop="url")['href']
             aid = url.split('/')[4]
             url = zhihu_url + url
-            agrees = int(a.find('div', class_ = "zm-votebar").find('span', class_ = "count").text)
-            text = a.find('div', class_ = "zm-editable-content clearfix").text
-            answer = {
-                'agrees' : agrees,
-                'text' : text,
-                'url' : url,
-                'aid' : aid
-            }
-            self.answers.append(answer)
+            agrees = a.find('div', class_ = "zm-votebar").find('span', class_ = "count").text
+            if 'K' in agrees:
+                agrees = float(agrees[0:-1]) * 1e3
+            agrees = int(agrees)
+            ts = a.find('div', class_ = "zm-editable-content clearfix")
+            if ts is not None:
+                text = ts.text
+                answer = {
+                    'agrees' : agrees,
+                    'text' : text,
+                    'url' : url,
+                    'aid' : aid
+                }
+                self.answers.append(answer)
 
 #check if this question object exists in database or file
 def check_question(qid, db = None):
     if db is None:
-        return os.path.exists(os.getcwd() + subdir + qid + '.json')
+        return os.path.exists(main_dir + subdir + qid + '.json')
     else:
         return db.questions.find({'_id' : qid}).count() != 0
+
+#crawl the question with given qid to disk, return the dictionary for this question
+def crawl_question(qid, session, user_agents = [user_agent], proxies = None, db = None):
+    if not check_question(qid, db):
+        print 'creating question ' + qid
+        q = Question(qid, session, user_agents, proxies, db)
+        q.evaluate()
+        q.flush()
+        print 'created question ' + qid
+            
+    if db is not None:
+        return db.questions.find_one({"_id" : qid})
+    else:
+        with open(main_dir + subdir + qid + '.json') as f: 
+            return json.load(f)

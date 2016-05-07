@@ -1,0 +1,29 @@
+{% extends "show_user.html" %}
+{% block body %}
+  <ul class=data>
+    <h1>{{ data.attri }}</h1>
+    {% if data.attri == 'followees'%}
+        {% for d in data.dat %}
+            <h3>{{d}}</h3>
+        {% endfor %}
+    {% endif %}
+    {% if data.attri == 'questions'%}
+        {% for d in data.dat %}
+            <h3>{{d}}</h3>
+        {% endfor %}
+    {% endif %}
+    {% if data.attri == 'answers'%}
+        {% for d in data.dat %}
+            <h2>{{d['url']}}</h2>
+            <h3>{{d['text']}}</h3>
+        {% endfor %}
+    {% endif %}
+    {% if data.attri == 'timelines'%} 
+        {% for d in data.dat %}
+            <h2>{{d['url']}}</h2>
+            <h3>{{d['text']}}</h3>
+        {% endfor %}
+    {% endif %}
+  </ul>
+
+{% endblock %}

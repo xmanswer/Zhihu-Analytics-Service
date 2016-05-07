@@ -1,0 +1,19 @@
+<!doctype html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Zhihu Analytic Service</title>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+<div class=page>
+  <h1>Welcome to Zhihu Analytic Service</h1>
+  {% for message in get_flashed_messages() %}
+    <div class=flash>{{ message }}</div>
+  {% endfor %}
+  {% block body %}    
+    <form action="{{ url_for('add_person') }}" method=post class=add-person>
+      <dl>
+        <dt>uid:
+        <dd><input type=text size=30 name=uid>
+        <dd><input type=submit value=find>
+      </dl>
+    </form>
+  {% endblock %}
+</div>
