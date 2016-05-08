@@ -46,13 +46,27 @@ def add_person():
         u = person.crawl_person(uid, zhihu_session, user_agents)
     return render_template('show_user.html', user = u)
 
+@app.route('/users', methods=['GET'])
+def get_users():
+    users = dict()
+    users['users'] = []
+    for u in db.users.find():
+        users['users'].append(u['uid'])
+    return render_template('show_users.html', users = users)
+
 @app.route('/get', methods=['GET'])
 def get_text():
     a = request.args['attri']
     uid = request.args['uid']
     data = dict()
     data['attri'] = a
-    data['dat'] = db.users.find_one({'_id' : uid})[a]
+    user = db.users.find_one({'_id' : uid})
+    data['dat'] = user[a]
+    if a == 'questions':
+        data['questions'] = []
+        for q in user[a]:
+            question = db.questions.find_one({'_id' : q})
+            data['questions'].append({'title' : question['title'], 'question' : question['question']})
     #return a
     #u = db.users.find_one({'_id' : session.get('uid')})
     return render_template('show_more.html', data = data)

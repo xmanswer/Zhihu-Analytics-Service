@@ -15,5 +15,8 @@
         <dd><input type=submit value=find>
       </dl>
     </form>
+    <form action="{{ url_for('get_users') }}" method="get" class=get-users>
+      <button name="all-users" type="submit">all users</button>
+    </form>
   {% endblock %}
 </div>

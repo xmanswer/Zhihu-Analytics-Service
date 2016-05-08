@@ -8,8 +8,12 @@
         {% endfor %}
     {% endif %}
     {% if data.attri == 'questions'%}
+        {% for t in data.questions %}
+            <h2>{{t.title}}</h2>
+            <h3>{{t.question}}</h3>
+        {% endfor %}    		
         {% for d in data.dat %}
-            <h3>{{d}}</h3>
+            <h4>{{d}}</h4>
         {% endfor %}
     {% endif %}
     {% if data.attri == 'answers'%}

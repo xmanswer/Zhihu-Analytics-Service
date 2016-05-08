@@ -64,7 +64,8 @@ class Question:
         self.db = db
         self.user_agents = user_agents
         self.proxies = proxies
-        self.log = open(LOG + self.qid + '.log', 'w')
+        if __LOG__:
+            self.log = open(LOG + self.qid + '.log', 'w')
     
     #evaluate all fields from the responded html for this question
     def evaluate(self):
@@ -106,7 +107,8 @@ class Question:
             self.flush_to_file()
         else:
             self.flush_to_db()
-        self.log.close()
+        if __LOG__:
+            self.log.close()
     
     #flush data to database
     def flush_to_db(self):

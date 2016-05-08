@@ -19,7 +19,7 @@ except NameError:
     
 import classes.question as question
 import utils.zhihu_login as zhihu_login
-from multiprocessing.pool import Pool
+from multiprocessing.pool import ThreadPool
 
 def create_question(qid):
     question.crawl_question(qid, session, user_agents, proxies, db)
@@ -28,10 +28,11 @@ client = pymongo.MongoClient()
 db = client.zhihu
 session = zhihu_login.get_session(p_c = 40, p_m = 1000, m_r = 0, p_b = True)
 user_agents = zhihu_login.get_agents()
-pool = Pool(40)
+pool = ThreadPool(30)
 
-for u in db.users.find():
+for u in db.users.find(no_cursor_timeout=True):
     if len(u['questions']) > 0:
         pool.map(create_question, u['questions'])
 #    for q in u['questions']:
 #        question.crawl_question(q, session, user_agents, proxies, db)
+    

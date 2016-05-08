@@ -84,7 +84,8 @@ class Person:
         self.db = db
         self.user_agents = user_agents
         self.proxies = proxies
-        self.log = open(LOG + uid + '.log', 'w')
+        if __LOG__:
+            self.log = open(LOG + uid + '.log', 'w')
     
     #evaluate fields in multi-threading
     def evaluate(self):
@@ -122,7 +123,8 @@ class Person:
             self.flush_to_file()
         else:
             self.flush_to_db()
-        self.log.close()
+        if __LOG__:
+            self.log.close()
         
     #flush data to database
     def flush_to_db(self):
@@ -214,7 +216,7 @@ class Person:
                 r_post = self.reliable_post(post_url, data, header)
                 extenedlist = r_post.json()["msg"]
                 
-                for j in xrange(min(num - i * 20, 20)):
+                for j in xrange(0, len(extenedlist)):
                     soup = BeautifulSoup(extenedlist[j], "lxml")
                     flist.append(soup.find("h2", class_="zm-list-content-title").a['data-tip'][4:])
         
@@ -225,9 +227,19 @@ class Person:
         soup = self.personal_soup
         avatar = soup.find("div", class_="zm-profile-header ProfileCard").find( \
         "img", class_="Avatar Avatar--l")["src"]
-        r = requests.get(avatar, stream=True, timeout = TIMEOUT, proxies = {
-                        'https': random.choice(self.proxies)                    
-                    })
+        connected = False
+        while not connected:
+            try:
+                r = requests.get(avatar, stream=True, timeout = TIMEOUT, proxies = {
+                                'https': random.choice(self.proxies)                    
+                            })
+                connected = True
+            except Exception as e:
+                if __DEBUG__:
+                    print self.uid, e
+                if __LOG__:
+                    self.log.write(str(e) + '\n')
+                    
         with open(main_dir + "/figures/" + self.uid + ".png", 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024):
                 f.write(chunk)
@@ -269,7 +281,12 @@ class Person:
         #construct post method for getting timelines, start_time is the first data_time
         post_url = self.url + "/activities"
         _xsrf = soup.find("input", attrs={'name': '_xsrf'})["value"]
-        start_time = soup.find("div", attrs={'class':'zm-profile-section-item zm-item clearfix'})["data-time"]
+        sts = soup.find("div", attrs={'class':'zm-profile-section-item zm-item clearfix'})
+        if sts is not None:
+            start_time = sts["data-time"]
+        else:
+            self.timelines = timelines
+            return
 
         data = {
             'start': start_time,
