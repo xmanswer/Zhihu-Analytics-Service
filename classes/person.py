@@ -174,7 +174,7 @@ class Person:
     
     def get_name(self):    
         soup = self.personal_soup
-        self.name = soup.find('div', class_="top-nav-profile").find('span', class_="name").string
+        self.name = soup.find('div', class_="title-section ellipsis").find('span', class_="name").string
         
     #wrapper for getting followers
     def get_followers(self):
@@ -233,16 +233,15 @@ class Person:
                 r = requests.get(avatar, stream=True, timeout = TIMEOUT, proxies = {
                                 'https': random.choice(self.proxies)                    
                             })
+                with open(main_dir + "/figures/" + self.uid + ".png", 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        f.write(chunk)
                 connected = True
             except Exception as e:
                 if __DEBUG__:
                     print self.uid, e
                 if __LOG__:
                     self.log.write(str(e) + '\n')
-                    
-        with open(main_dir + "/figures/" + self.uid + ".png", 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                f.write(chunk)
         
     #get all answer texts, return a list of answer texts
     def get_answers(self):
