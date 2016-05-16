@@ -1,33 +1,194 @@
-{% extends "show_user.html" %}
-{% block body %}
-  <ul class=data>
-    <h1>{{ data.attri }}</h1>
-    {% if data.attri == 'followees'%}
-        {% for d in data.dat %}
-            <h3>{{d}}</h3>
-        {% endfor %}
-    {% endif %}
-    {% if data.attri == 'questions'%}
-        {% for t in data.questions %}
-            <h2>{{t.title}}</h2>
-            <h3>{{t.question}}</h3>
-        {% endfor %}    		
-        {% for d in data.dat %}
-            <h4>{{d}}</h4>
-        {% endfor %}
-    {% endif %}
-    {% if data.attri == 'answers'%}
-        {% for d in data.dat %}
-            <h2>{{d['url']}}</h2>
-            <h3>{{d['text']}}</h3>
-        {% endfor %}
-    {% endif %}
-    {% if data.attri == 'timelines'%} 
-        {% for d in data.dat %}
-            <h2>{{d['url']}}</h2>
-            <h3>{{d['text']}}</h3>
-        {% endfor %}
-    {% endif %}
-  </ul>
+<!doctype html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <link rel="icon" href="../../favicon.ico">
 
-{% endblock %}
+  <title>Zhihu Analytics Service</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="{{ url_for('static', filename='bootstrap.min.css') }} " rel="stylesheet">
+  <!-- Bootstrap theme -->
+  <link href="{{ url_for('static', filename='bootstrap-theme.min.css') }} " rel="stylesheet">
+  <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+  <link href="{{ url_for('static', filename='ie10-viewport-bug-workaround.css') }}" rel="stylesheet">
+
+  <!-- Custom styles for this template -->
+  <link href="{{ url_for('static', filename='theme.css') }} " rel="stylesheet">
+
+  <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+  <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+</head>
+
+<body role="document">
+
+  <!-- Fixed navbar -->
+  <nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="{{url_for('show_msg')}}">Home</a></li>
+          <li><a href="{{url_for('show_msg')}}">About</a></li>
+          <li><a href="{{url_for('show_msg')}}">Contact</a></li>
+          <li class="dropdown">
+            <a href="{{url_for('show_msg')}}" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="{{url_for('show_msg')}}">Action</a></li>
+              <li><a href="{{url_for('show_msg')}}">Another action</a></li>
+              <li><a href="{{url_for('show_msg')}}">Something else here</a></li>
+              <li role="separator" class="divider"></li>
+              <li class="dropdown-header">Nav header</li>
+              <li><a href="{{url_for('show_msg')}}">Separated link</a></li>
+              <li><a href="{{url_for('show_msg')}}">One more separated link</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div><!--/.nav-collapse -->
+    </div>
+  </nav>
+
+  <div class="container theme-showcase" role="main">
+    <ul class=user>
+      <div class="jumbotron">
+        <h1>{{ user.name }}</h1>
+        <p>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="panel panel-primary">
+                <div class="panel-heading">
+                  <h3 class="panel-title">UID: {{user.uid}}</h3>
+                </div>
+                <div class="panel-body">
+                  <img src="{{url_for('show_figure', uid = user.uid)}}" class="img-thumbnail" alt="user-fig">
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="panel panel-danger">
+                <div class="panel-heading">
+                  <h3 class="panel-title">Agrees</h3>
+                </div>
+                <div class="panel-body">
+                  <h4>
+                    <span class="label label-default">{{user.agrees}}</span>
+                  </h4>
+                </div>
+              </div>
+              <div class="panel panel-info">
+                <div class="panel-heading">
+                  <h3 class="panel-title">Thanks</h3>
+                </div>
+                <div class="panel-body">
+                  <h4>
+                    <span class="label label-default">{{user.thanks}}</span>
+                  </h4>
+                </div>
+              </div>
+            </div><!-- /.col-sm-4 -->
+            <div class="col-sm-4">
+              <div class="panel panel-success">
+                <div class="panel-heading">
+                  <h3 class="panel-title">Followees</h3>
+                </div>
+                <div class="panel-body">
+                  <h4>
+                    <span class="label label-default">{{user.followees_num}}</span>
+                  </h4>
+                </div>
+              </div>
+              <div class="panel panel-warning">
+                <div class="panel-heading">
+                  <h3 class="panel-title">Followers</h3>
+                </div>
+                <div class="panel-body">
+                  <h4>
+                    <span class="label label-default">{{user.followers_num}}</span>
+                  </h4>
+                </div>
+              </div>
+            </div><!-- /.col-sm-4 -->
+          </div>
+        </p>
+      </div>
+
+          <div class="panel panel-primary">
+            <div class="panel-heading">
+              <h3 class="panel-title">More Information</h3>
+            </div>
+            <div class="panel-body">
+              <form action="{{ url_for('get_text') }}" method=get class="navbar-form navbar-left">
+                  <input type="hidden" name="uid" value="{{user.uid}}">
+                  <button name="attri" type="submit" value="followees" class="btn btn-success">followees</button>
+                  <button name="attri" type="submit" value="timelines" class="btn btn-success">timelines</button>
+                  <button name="attri" type="submit" value="answers" class="btn btn-success">answers</button>
+                  <button name="attri" type="submit" value="questions" class="btn btn-success">questions</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel panel-primary">
+            <div class="panel-heading">
+              <h2 class="panel-title">{{user.attri}}</h2>
+            </div>
+            <div class="panel-body">
+              <ul class="list-group">
+                {% if user.attri == 'followees'%}
+                    {% for d in user.followees %}
+                      <li class="list-group-item">
+                        <h2 class="list-group-item-heading">{{user.fns[d]}}</h2>
+                        <p class="list-group-item-text">
+                          <a href = "{{url_for('add_person', UID = d)}}" method=get>
+                            <img src="{{url_for('show_figure', uid = d)}}" class="img-thumbnail" alt="user-fig">
+                          </a>
+                        </p>
+                      </li>
+                    {% endfor %}
+                {% endif %}
+                {% if user.attri == 'questions'%}
+                    {% for d in user.qs %}
+                      <li class="list-group-item">
+                        <h2 class="list-group-item-heading">{{d.title}}</h2>
+                        <p class="list-group-item-text">{{d.question}}</p>
+                      </li>
+                    {% endfor %}
+                {% endif %}
+                {% if user.attri == 'answers'%}
+                    {% for d in user.answers %}
+                      <li class="list-group-item">
+                        <h2 class="list-group-item-heading">{{d.title}}</h2>
+                        <p class="list-group-item-text">{{d.text}}</p>
+                      </li>
+                    {% endfor %}
+                {% endif %}
+                {% if user.attri == 'timelines'%}
+                    {% for d in user.timelines %}
+                      <li class="list-group-item">
+                        <h2 class="list-group-item-heading">{{d.title}}</h2>
+                        <p class="list-group-item-text">{{d.text}}</p>
+                      </li>
+                    {% endfor %}
+                {% endif %}
+              </ul>
+            </div>
+          </div>
+    </ul>
+  </div>
+</body>

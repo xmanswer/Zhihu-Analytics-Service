@@ -26,9 +26,9 @@ def create_question(qid):
 
 client = pymongo.MongoClient()
 db = client.zhihu
-session = zhihu_login.get_session(p_c = 40, p_m = 1000, m_r = 0, p_b = True)
+session = zhihu_login.get_session(p_c = 60, p_m = 1000, m_r = 0, p_b = True)
 user_agents = zhihu_login.get_agents()
-pool = ThreadPool(30)
+pool = ThreadPool(50)
 
 for u in db.users.find(no_cursor_timeout=True):
     if len(u['questions']) > 0:
