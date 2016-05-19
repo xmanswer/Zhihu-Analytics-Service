@@ -59,11 +59,15 @@ import threading
 import pymongo
 import time
 import random
+import question
 
 __DEBUG__ = False
 __LOG__ = False
 
 main_dir = os.path.realpath('..')
+
+import analysis.keyword_extraction as keyword_extraction
+
 LOG = main_dir + '/logs/'
 subdir = '/users/'
 zhihu_url = "https://www.zhihu.com"
@@ -132,7 +136,8 @@ class Person:
         try:
             self.db.users.insert_one(self.construct_data())        
         except pymongo.errors.DuplicateKeyError:
-            return
+            self.db.users.delete_one({'_id' : self.uid})
+            self.db.users.insert_one(self.construct_data())
     
     #flush data to file in json format
     def flush_to_file(self):
@@ -193,13 +198,15 @@ class Person:
         for i in xrange((num - 1) / 20 + 1):
             if i == 0: #the first 20 users
                 ul = fsoup.find_all("h2", class_="zm-list-content-title")
-                for j in xrange(min(num, 20)):
+                for j in xrange(min(num, len(ul))):
                     flist.append(ul[j].a['data-tip'][4:])
             else: #more users, need to specify offsets to post request
                 post_url = "http://www.zhihu.com/node/" + friends_url_dict[friend_type]
                 _xsrf = fsoup.find("input", attrs={'name': '_xsrf'})["value"]
                 offset = i * 20
+                
                 hash_id = re.findall("hash_id&quot;: &quot;(.*)&quot;},", fpage)[0]
+                
                 params = json.dumps({"offset": offset, "order_by": "created", "hash_id": hash_id})
                 data = {
                     '_xsrf': _xsrf,
@@ -213,8 +220,7 @@ class Person:
                     'Referer': furl
                 }
                 
-                r_post = self.reliable_post(post_url, data, header)
-                extenedlist = r_post.json()["msg"]
+                extenedlist = self.reliable_post(post_url, data, header)
                 
                 for j in xrange(0, len(extenedlist)):
                     soup = BeautifulSoup(extenedlist[j], "lxml")
@@ -299,10 +305,10 @@ class Person:
         
         #accumulate response_size to total, quit crawling timeline texts once
         #no more response or number of docs exceeds threshold value
-        r = self.reliable_post(post_url, data, header)
-        response_size = r.json()["msg"][0]
+        r_msg = self.reliable_post(post_url, data, header)
+        response_size = r_msg[0]
         total = total + response_size
-        response_html = r.json()["msg"][1]
+        response_html = r_msg[1]
         for a in BeautifulSoup(response_html).findAll('div', class_="zm-item-rich-text expandable js-collapse-body"):
             answer = self.construct_answer(a)
             timelines.append(answer)
@@ -317,10 +323,10 @@ class Person:
                 'start': latest_data_time,
                 '_xsrf': _xsrf,
             }
-            r = self.reliable_post(post_url, data, header)
-            response_size = r.json()["msg"][0]
+            r_msg = self.reliable_post(post_url, data, header)
+            response_size = r_msg[0]
             total = total + response_size
-            response_html = r.json()["msg"][1]
+            response_html = r_msg[1]
             for a in BeautifulSoup(response_html).findAll('div', class_="zm-item-rich-text expandable js-collapse-body"):
                 answer = self.construct_answer(a)
                 timelines.append(answer)
@@ -346,6 +352,7 @@ class Person:
         connected = False
         while not connected:
             try:
+                self.session.headers['User-Agent'] = random.choice(self.user_agents)
                 r = self.session.get(url, timeout = TIMEOUT, proxies = {
                         'https': random.choice(self.proxies)
                     }).text
@@ -368,13 +375,14 @@ class Person:
                         'https': random.choice(self.proxies)                    
                     })
                 time.sleep(SLEEPTIME)
-                connected = True
+                r_msg = r.json()["msg"]
+                connected = True                
             except Exception as e: 
                 if __DEBUG__:
                     print self.uid, url, e
                 if __LOG__:
                     self.log.write(url + ' ' + str(e) + '\n')
-        return r        
+        return r_msg        
         
 #check if this question object exists in database or file
 def check_person(uid, db = None):
@@ -391,6 +399,26 @@ def crawl_person(uid, session, user_agents = [user_agent], proxies = None, db = 
         p.evaluate()
         p.flush()
         print 'created user ' + uid
+        
+    if db is not None:
+        return db.users.find_one({"_id" : uid})
+    else:
+        with open(main_dir + subdir + uid + '.json') as f: 
+            return json.load(f)
+
+#crawl the Person with given uid to disk, return the dictionary for this person
+def update_person(uid, session, user_agents = [user_agent], proxies = None, db = None):
+    print 'updating user ' + uid
+    p = Person(uid, session, user_agents, proxies, db)
+    p.evaluate()
+    for qid in p.questions:
+        question.crawl_question(qid, session, user_agents, proxies, db)
+    p.flush()
+    keyword_extraction.generate_user_keywords(uid, db)
+    for qid in p.questions:
+        keyword_extraction.generate_question_keywords(qid, db)
+        
+    print 'updated user ' + uid
         
     if db is not None:
         return db.users.find_one({"_id" : uid})

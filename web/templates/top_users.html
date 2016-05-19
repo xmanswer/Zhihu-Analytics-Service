@@ -1,4 +1,5 @@
 <!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -25,12 +26,19 @@
 
   <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
   <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
   <![endif]-->
+  <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="{{url_for('static', filename = 'js/d3.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3.min.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3.node.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3-cloud-master/index.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3-cloud-master/build/d3.layout.cloud.js')}}"></script>
 </head>
 
 <body role="document">
+  <script>d3.select("body").style("background-color", "#333");</script>
 
   <!-- Fixed navbar -->
   <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -45,30 +53,230 @@
       </div>
       <div id="navbar" class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
-          <li class="active"><a href="{{url_for('show_msg')}}">Home</a></li>
-          <li><a href="{{url_for('show_msg')}}">About</a></li>
-          <li><a href="{{url_for('show_msg')}}">Contact</a></li>
-          <li class="dropdown">
-            <a href="{{url_for('show_msg')}}" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
-            <ul class="dropdown-menu">
-              <li><a href="{{url_for('show_msg')}}">Action</a></li>
-              <li><a href="{{url_for('show_msg')}}">Another action</a></li>
-              <li><a href="{{url_for('show_msg')}}">Something else here</a></li>
-              <li role="separator" class="divider"></li>
-              <li class="dropdown-header">Nav header</li>
-              <li><a href="{{url_for('show_msg')}}">Separated link</a></li>
-              <li><a href="{{url_for('show_msg')}}">One more separated link</a></li>
+          <li {% if request.path == "/" %} class="active"{% endif%} ><a href="{{url_for('show_msg')}}">Home</a></li>
+          <li {% if request.path == "/users" %} class="active"{% endif%} class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu1" type="button" role="button" aria-haspopup="true"
+            aria-expanded="false">Top Users<span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu" aria-laeblledby="menu1">
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users', attri = 'top_10_agrees')}}">Top 10 Agrees</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_thanks')}}">Top 10 Thanks</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followers')}}">Top 10 Followers</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followees')}}">Top 10 Followees</a></li>
             </ul>
           </li>
+          <li {% if request.path == "/contents" %} class="active"{% endif%} class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu2" type="button" role="button" aria-haspopup="true"
+            aria-expanded="false">Top Contents<span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu" aria-laeblledby="menu2">
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_questions')}}">Top 10 Questions</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_answers')}}">Top 10 Answers</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_keywords')}}">Top Keywords</a></li>
+            </ul>
+          </li>
+          <li {% if request.path == "/about" %} class="active"{% endif%}><a href="{{url_for('show_about')}}">About</a></li>
+          <li {% if request.path == "/contact" %} class="active"{% endif%}><a href="{{url_for('show_contact')}}">Contact</a></li>
+          <li>
+            <form action="{{ url_for('add_person') }}" method=get class="navbar-form navbar-left">
+              <div class="form-group">
+                <input type="text" placeholder="Find User using UID or username" name = "UID" class="form-control">
+              </div>
+              <button type="submit" class="btn btn-primary">Find</button>
+            </form>
+          </li>
         </ul>
+
       </div><!--/.nav-collapse -->
     </div>
   </nav>
 
-  <ul class=users>
-		{% for u in users.users %}
-			<h3>{{u}}</h3>
-		{% endfor %}
-	</ul>
+  <div align="center" class="container theme-showcase" role="main">
+    <ul class=top>
+      {% if top.attri == 'None' %}
+      <div style="background-color:#333" class="jumbotron">
+        <h2 style="color:white" align = "center">User Not Found</h2>
+        <h4 style="color:white" align = "center">User(s) do not exist in database.</h4>
+        <h4 style="color:white" align = "center">System will start crawling more information from zhihu.com, please check back in 2 minutes.</h4>
+      </div>
+      {% elif top.attri == 'Username'%}
+      <div style="background-color:#333" class="jumbotron">
+        <h2 style="color:white" align = "center">Relevant Users</h2>
+        <h4 style="color:white" align = "center"> Found user(s) with this username </h4>
+      </div>
+      <div class="panel panel-primary">
+        <div class="panel-body">
+          <ul class="list-group">
+            {% for d in top.userlist %}
+            <li class="list-group-item">
+              <h3 class="list-group-item-heading">{{d}}</h3>
+              <p class="list-group-item-text">
+                <a href = "{{url_for('add_person', UID = d)}}" method=get>
+                  <img src="{{url_for('show_figure', uid = d)}}" class="img-thumbnail" alt="user-fig">
+                </a>
+              </p>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% else %}
+      <div style="background-color:#333" class="jumbotron">
+        <h2 style="color:white" align = "center">{{ top.title }} Users</h2>
+        <h4 style="color:white" align = "center"> Take a look at these Big V users </h4>
+        <style>
+        path {
+          stroke: lightblue;
+          stroke-width: 5;
+          fill: none;
+        }
+        .axis path,
+        .axis line {
+          fill: none;
+          stroke: white;
+          stroke-width: 2;
+          shape-rendering: crispEdges;
+        }
+        .tick text{
+          font-size: 18px;
+          fill: white;
+          stroke: white;
+        }
+        .x.label {
+          font-size: 18px;
+          fill: white;
+          stroke: white;
+        }
+        .y.label {
+          font-size: 18px;
+          fill: white;
+          stroke: white;
+        }
+        .tick line{
+          opacity: 0.2;
+        }
+        .title {
+          font-size: 20px;
+          fill: white;
+          stroke: white;
+        }
+        </style>
 
+        <ul class="nav nav-tabs" role="tablist">
+          <li style="font-size:20px" class="active"><a href="#users" role="tab" data-toggle="tab">Top Users</a></li>
+          <li style="font-size:20px"><a href="#stats" role="tab" data-toggle="tab">Statistic</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade in active" id="users">
+            <ul align = "center" class="list-group">
+              {% for d in top.userlist %}
+              {% if (loop.index-1) % 5 == 0 %}
+              <div align = "center" class="row">
+                {%endif%}
+                <div align = "center" class="col-sm-2">
+                  <h2 class="list-group-item-heading" style = "color:white">{{d.name}}</h2>
+                  <p class="list-group-item-text">
+                    <a href = "{{url_for('add_person', UID = d._id)}}" method=get>
+                      <img src="{{url_for('show_figure', uid = d._id)}}" class="img-thumbnail" alt="user-fig">
+                    </a>
+                  </p>
+                </div>
+                {% if loop.index % 5 == 0 %}
+              </div>
+              {%endif%}
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="tab-pane fade" id="stats">
+            <p5></p5>
+          </div>
+        </div>
+
+        <script>
+        // define dimensions of graph
+        var margin = {top: 100, right: 100, bottom: 100, left: 100},
+        width = 1000 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+        var data = {{top.xdata[top.xtype]|tojson}};
+        var x = d3.scale.linear().domain([0, data.length]).range([0, width]);
+        var y = d3.scale.log().domain([1, data[0]]).range([height, 0]);
+
+        // create a line function that can convert data[] into x and y points
+        var line = d3.svg.line()
+        // assign the X function to plot our line as we wish
+        .x(function(d,i) {
+          // verbose logging to show what's actually being done
+          console.log('Plotting X value for data point: ' + d + ' using index: ' + i + ' to be at: ' + x(i) + ' using our xScale.');
+          // return the X coordinate where we want to plot this datapoint
+          return x(i);
+        })
+        .y(function(d) {
+          // verbose logging to show what's actually being done
+          console.log('Plotting Y value for data point: ' + d + ' to be at: ' + y(d) + " using our yScale.");
+          // return the Y coordinate where we want to plot this datapoint
+          return y(d);
+        })
+        // Add an SVG element with the desired dimensions and margin.
+        var graph = d3.select("p5").append("svg:svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("svg:g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top +")");
+        // create yAxis
+        var xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10).innerTickSize(-height)
+        .outerTickSize(0)
+        .tickPadding(10);
+
+        // Add the x-axis.
+        graph.append("svg:g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+        graph.append("text").attr("class", "x label")
+        .attr("text-anchor", "end")
+        .attr("x", (width + margin.left+ margin.left) / 2)
+        .attr("y", height+ margin.top/2)
+        .text("percentage of top users (%)");
+
+        // create left yAxis
+        var yAxisLeft = d3.svg.axis().scale(y).ticks(10).orient("left").innerTickSize(-width)
+        .outerTickSize(0)
+        .tickPadding(10);
+
+        // Add the y-axis to the left
+        graph.append("svg:g")
+        .attr("class", "y axis")
+        .attr("transform", "translate(" + 0 +",0)")
+        .call(yAxisLeft);
+
+        graph.append("text").attr("class", "y label")
+        .attr("text-anchor", "end").attr("transform", "rotate(-90)")
+        .attr("x", -height/2 + margin.top)
+        .attr("y", -margin.left/1.5)
+        .text("number of {{top.xtype}}");
+
+        graph.append("text").attr("class", "title")
+        .attr("text-anchor", "end")
+        .attr("x", (width + margin.left) / 2+ margin.right)
+        .attr("y", margin.top/4)
+        .text("Zipf's Law like distribution of {{top.xtype}}");
+        // Add the line by appending an svg:path element with the data line we created above
+        // do this AFTER the axes above so that the line is above the tick-lines
+        graph.append("svg:path").attr("d", line(data));
+        </script>
+      </div>
+      {%endif%}
+    </ul>
+  </div>
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="jquery.min.js"><\/script>')</script>
+<script src="{{url_for('static', filename = 'js/bootstrap.min.js')}}"></script>
+<script src="{{url_for('static', filename = 'js/docs.min.js')}}"></script>
+<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+<script src="{{url_for('static', filename = 'js/ie10-viewport-bug-workaround.js')}}"></script>
 </body>
+</html>

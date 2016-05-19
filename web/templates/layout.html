@@ -26,13 +26,19 @@
 
   <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
   <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
   <![endif]-->
+  <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="{{url_for('static', filename = 'js/d3.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3.min.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3.node.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3-cloud-master/index.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3-cloud-master/build/d3.layout.cloud.js')}}"></script>
 </head>
 
 <body role="document">
-
+  <script>d3.select("body").style("background-color", "#333");</script>
   <!-- Fixed navbar -->
   <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container">
@@ -46,26 +52,35 @@
       </div>
       <div id="navbar" class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
-          <li class="active"><a href="{{url_for('show_msg')}}">Home</a></li>
-          <li><a href="{{url_for('show_about')}}">About</a></li>
-          <li><a href="{{url_for('show_contact')}}">Contact</a></li>
-          <li class="dropdown">
+          <li {% if request.path == "/" %} class="active"{% endif%} ><a href="{{url_for('show_msg')}}">Home</a></li>
+          <li {% if request.path == "/users" %} class="active"{% endif%} class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu1" type="button" role="button" aria-haspopup="true"
             aria-expanded="false">Top Users<span class="caret"></span></a>
-              <ul class="dropdown-menu" role="menu" aria-laeblledby="menu1">
-                <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('show_msg')}}">Top 10 Agrees</a></li>
-                <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('show_msg')}}">Top 10 Thanks</a></li>
-                <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('show_msg')}}">Top 10 Followers</a></li>
-                <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('show_msg')}}">Top 10 Followees</a></li>
-              </ul>
+            <ul class="dropdown-menu" role="menu" aria-laeblledby="menu1">
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users', attri = 'top_10_agrees')}}">Top 10 Agrees</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_thanks')}}">Top 10 Thanks</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followers')}}">Top 10 Followers</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followees')}}">Top 10 Followees</a></li>
+            </ul>
           </li>
-          <li class="dropdown">
+          <li {% if request.path == "/contents" %} class="active"{% endif%} class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu2" type="button" role="button" aria-haspopup="true"
             aria-expanded="false">Top Contents<span class="caret"></span></a>
-              <ul class="dropdown-menu" role="menu" aria-laeblledby="menu2">
-                <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('show_msg')}}">Top 10 Questions</a></li>
-                <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('show_msg')}}">Top 10 Answers</a></li>
-              </ul>
+            <ul class="dropdown-menu" role="menu" aria-laeblledby="menu2">
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_questions')}}">Top 10 Questions</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_answers')}}">Top 10 Answers</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_keywords')}}">Top Keywords</a></li>
+            </ul>
+          </li>
+          <li {% if request.path == "/about" %} class="active"{% endif%}><a href="{{url_for('show_about')}}">About</a></li>
+          <li {% if request.path == "/contact" %} class="active"{% endif%}><a href="{{url_for('show_contact')}}">Contact</a></li>
+          <li>
+            <form action="{{ url_for('add_person') }}" method=get class="navbar-form navbar-left">
+              <div class="form-group">
+                <input type="text" placeholder="Find User using UID or username" name = "UID" class="form-control">
+              </div>
+              <button type="submit" class="btn btn-primary">Find</button>
+            </form>
           </li>
         </ul>
 
@@ -73,125 +88,208 @@
     </div>
   </nav>
 
-  <div class="container theme-showcase" role="main">
+  <div align="center" class="container theme-showcase" role="main">
     <ul class=glob>
 
-      <div class="jumbotron">
-        <h1>Welcome to Zhihu Analytic Service</h1>
-        <p>Zhihu is a Chinese question-and-answer website where questions are created, answered, edited and organized by the community of its users. This web service is developed in python for crawling large data of users and questions-answers information, as well as data storage, analysis, and visualization.</p>
-          <div class="panel panel-primary">
-            <div class="panel-heading">
-              <h3 class="panel-title">Find User From UID</h3>
+      <div class="jumbotron" style="background-color:#333">
+        <h1 style="color:white">Welcome to Zhihu Analytic Service</h1>
+        <p style="color:white"> Have fun exploring your statistics at Zhihu </p>
+        <div class="row">
+          <div class="col-md-2">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title">Ave Thanks</h3>
+              </div>
+              <div class="panel-body">
+                {{glob.global_par.average_thanks}}
+              </div>
             </div>
-            <div class="panel-body">
-              <form action="{{ url_for('add_person') }}" method=get class="navbar-form navbar-left">
-                  <div class="form-group">
-                    <input type="text" placeholder="UID" name = "UID" class="form-control">
-                  </div>
-                  <button type="submit" class="btn btn-success">Find</button>
-              </form>
             </div>
-          </div>
-      </div>
-
-      <div class="page-header">
-        <h1>Zhihu Users Info</h1>
-      </div>
-      <div class="row">
-        <div class="col-sm-4">
-          <div class="panel panel-info">
-            <div class="panel-heading">
-              <h3 class="panel-title">Average Thanks</h3>
+            <div class="col-md-2">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title">Total Thanks</h3>
+              </div>
+              <div class="panel-body">
+                {{glob.global_par.total_thanks}}
+              </div>
             </div>
-            <div class="panel-body">
-              {{glob.global_par.average_thanks}}
-            </div>
-          </div>
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <h3 class="panel-title">Total Thanks</h3>
-            </div>
-            <div class="panel-body">
-              {{glob.global_par.total_thanks}}
+          </div><!-- /.col-sm-4 -->
+          <div class="col-md-2">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title">Ave Agrees</h3>
+              </div>
+              <div class="panel-body">
+                {{glob.global_par.average_agrees}}
+              </div>
             </div>
           </div>
-        </div><!-- /.col-sm-4 -->
-        <div class="col-sm-4">
-          <div class="panel panel-success">
-            <div class="panel-heading">
-              <h3 class="panel-title">Average Agrees</h3>
+          <div class="col-md-2">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title">Total Agrees</h3>
+              </div>
+              <div class="panel-body">
+                {{glob.global_par.total_agrees}}
+              </div>
             </div>
-            <div class="panel-body">
-              {{glob.global_par.average_agrees}}
-            </div>
-          </div>
-          <div class="panel panel-warning">
-            <div class="panel-heading">
-              <h3 class="panel-title">Total Agrees</h3>
-            </div>
-            <div class="panel-body">
-              {{glob.global_par.total_agrees}}
-            </div>
-          </div>
-        </div><!-- /.col-sm-4 -->
-        <div class="col-sm-4">
-          <div class="panel panel-primary">
-            <div class="panel-heading">
-              <h3 class="panel-title">Total Users</h3>
-            </div>
-            <div class="panel-body">
-              {{glob.total_users}}
+          </div><!-- /.col-sm-4 -->
+          <div class="col-md-2">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title">Total Users</h3>
+              </div>
+              <div class="panel-body">
+                {{glob.total_users}}
+              </div>
             </div>
           </div>
-          <div class="panel panel-danger">
-            <div class="panel-heading">
-              <h3 class="panel-title">Total Questions</h3>
+          <div class="col-md-2">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title">Total QA</h3>
+              </div>
+              <div class="panel-body">
+                {{glob.total_questions}}
+              </div>
             </div>
-            <div class="panel-body">
-              {{glob.total_questions}}
-            </div>
-          </div>
-        </div><!-- /.col-sm-4 -->
-      </div>
-
-      <div class="page-header">
-        <h1>Top 10 Questions</h1>
-      </div>
-        <ul class="list-group">
-          {% for d in glob.top_10_questions %}
-            <li class="list-group-item">
-              <h2 class="list-group-item-heading">{{d.title}}</h2>
-              <h3 class="list-group-item-heading">Number of Answers: {{d.anum}}</h3>
-              <p class="list-group-item-text">{{d.question}}</p>
-            </li>
-          {% endfor %}
-        </ul>
-
-        <div class="page-header">
-          <h1>Top 10 Answers</h1>
+          </div><!-- /.col-sm-4 -->
         </div>
-          <ul class="list-group">
-            {% for d in glob.top_10_answers %}
-              <li class="list-group-item">
-                <h2 class="list-group-item-heading">{{d.title}}</h2>
-                <h3 class="list-group-item-heading">Number of Agrees: {{d.answers.agrees}}</h3>
-                <p class="list-group-item-text">{{d.answers.text}}</p>
-              </li>
-            {% endfor %}
-          </ul>
+      </div>
+
+
+
+      <h1><span class="label label-primary">Random recommendations</span></h1>
+      <div id="carousel-example-generic" class="carousel slide" data-ride="carousel">
+        <ol class="carousel-indicators">
+          <li data-target="#carousel-example-generic" data-slide-to="0" class="active"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="1"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="2"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="3"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="4"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="5"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="6"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="7"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="8"></li>
+          <li data-target="#carousel-example-generic" data-slide-to="9"></li>
+        </ol>
+        <div class="carousel-inner" role="listbox">
+          <div align="center" class="item active">
+            <h2 style="color:white">{{glob.random_users[0][1]}}</h2>
+            <h3 style="color:white">{{glob.random_users[0][2]}} agrees, {{glob.random_users[0][3]}} followers</h3>
+            <a href = "{{url_for('add_person', UID = glob.random_users[0][0])}}" method=get>
+              <img height="300" width="300" src="{{url_for('show_figure', uid = glob.random_users[0][0])}}" alt="user-fig">
+            </a>
+          </div>
+          {%for u in glob.random_users[1:]%}
+          <div align="center" class="item">
+            <h2 style="color:white">{{u[1]}}</h2>
+            <h3 style="color:white">{{u[2]}} agrees, {{u[3]}} followers</h3>
+            <a href = "{{url_for('add_person', UID = u[0])}}" method=get>
+              <img height="300" width="300" src="{{url_for('show_figure', uid = u[0])}}" alt="user-fig">
+            </a>
+          </div>
+          {%endfor%}
+        </div>
+        <a class="left carousel-control" href="#carousel-example-generic" role="button" data-slide="prev">
+          <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+          <span class="sr-only"></span>
+        </a>
+        <a class="right carousel-control" href="#carousel-example-generic" role="button" data-slide="next">
+          <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+          <span class="sr-only"></span>
+        </a>
+      </div>
+
+      <h1><span class="label label-primary">Top 10 Questions</span></h1>
+      <div id="carousel-example-generic2" class="carousel slide" data-ride="carousel">
+        <ol class="carousel-indicators">
+          <li data-target="#carousel-example-generic2" data-slide-to="0" class="active"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="1"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="2"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="3"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="4"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="5"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="6"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="7"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="8"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="9"></li>
+        </ol>
+        <div class="carousel-inner" role="listbox">
+          <div align="center" class="item active">
+            <h2 style="color:white">Top 10 Questions</h2>
+              <img height="300" width="300"  src="{{url_for('static', filename = 'figures/questions.gif')}}">
+          </div>
+          {%for d in glob.top_10_questions%}
+          <div align="center" class="item">
+              <a href = "{{url_for('get_question', qid = d.qid)}}" method=get><h2 style="color:white">{{d.title}}</h2></a>
+              <h3 style="color:white">Number of Answers: {{d.anum}}</h3>
+              <h3 style="color:white">{{d.question}}</h3>
+              <img height="300" width="300"  src="{{url_for('static', filename = 'figures/questions.gif')}}">
+          </div>
+          {%endfor%}
+        </div>
+        <a class="left carousel-control" href="#carousel-example-generic2" role="button" data-slide="prev">
+          <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+          <span class="sr-only"></span>
+        </a>
+        <a class="right carousel-control" href="#carousel-example-generic2" role="button" data-slide="next">
+          <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+          <span class="sr-only"></span>
+        </a>
+      </div>
+
+      <h1><span class="label label-primary">Top 10 Answers</span></h1>
+      <div id="carousel-example-generic3" class="carousel slide" data-ride="carousel">
+        <ol class="carousel-indicators">
+          <li data-target="#carousel-example-generic3" data-slide-to="0" class="active"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="1"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="2"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="3"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="4"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="5"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="6"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="7"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="8"></li>
+          <li data-target="#carousel-example-generic3" data-slide-to="9"></li>
+        </ol>
+        <div class="carousel-inner" role="listbox">
+          <div align="center" class="item active">
+            <h2 style="color:white">Top 10 Answers</h2>
+            <img height="300" width="300"  src="{{url_for('static', filename = 'figures/answers.png')}}">
+          </div>
+          {%for d in glob.top_10_answers%}
+          <div align="center" class="item">
+              <a href = "{{url_for('get_question', qid = d.qid)}}" method=get> <h2 style="color:white">{{d.title}}</h2></a>
+              <h3 style="color:white">Number of Agrees: {{d.answers.agrees}}</h3>
+              <h3 style="color:white">{{d.answers.text}}</h3>
+              <img height="300" width="300"  src="{{url_for('static', filename = 'figures/answers.png')}}">
+          </div>
+          {%endfor%}
+        </div>
+        <a class="left carousel-control" href="#carousel-example-generic3" role="button" data-slide="prev">
+          <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+          <span class="sr-only"></span>
+        </a>
+        <a class="right carousel-control" href="#carousel-example-generic3" role="button" data-slide="next">
+          <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+          <span class="sr-only"></span>
+        </a>
+      </div>
     </ul>
   </div>
+
+
+
+  <!-- Bootstrap core JavaScript
+  ================================================== -->
+  <!-- Placed at the end of the document so the pages load faster -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="jquery.min.js"><\/script>')</script>
+  <script src="{{url_for('static', filename = 'js/bootstrap.min.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/docs.min.js')}}"></script>
+  <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+  <script src="{{url_for('static', filename = 'js/ie10-viewport-bug-workaround.js')}}"></script>
 </body>
-
-
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="jquery.min.js"><\/script>')</script>
-    <script src="{{url_for('static', filename = 'js/bootstrap.min.js')}}"></script>
-    <script src="{{url_for('static', filename = 'js/docs.min.js')}}"></script>
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="{{url_for('static', filename = 'js/ie10-viewport-bug-workaround.js')}}"></script>
-  </body>
 </html>

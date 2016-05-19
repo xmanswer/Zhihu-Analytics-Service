@@ -115,7 +115,8 @@ class Question:
         try:
             self.db.questions.insert_one(self.construct_data())        
         except pymongo.errors.DuplicateKeyError:
-            return
+            self.db.questions.delete_one({'_id' : self.qid})
+            self.db.questions.insert_one(self.construct_data())
     
     #flush data to file in json format
     def flush_to_file(self):
@@ -163,9 +164,11 @@ class Question:
     #get a list of topic labels associated
     def get_labels(self):
         self.labels = []
-        ls = self.soup.find('div', class_ = "zm-tag-editor-labels zg-clear").findAll('a')
-        for l in ls:
-            self.labels.append(l.find(text = True))
+        lbs = self.soup.find('div', class_ = "zm-tag-editor-labels zg-clear")
+        if lbs is not None:
+            ls = lbs.findAll('a')
+            for l in ls:
+                self.labels.append(l.find(text = True))
     
     #get a list of answers structure, with number of agrees, text, url and id
     def get_answers(self):

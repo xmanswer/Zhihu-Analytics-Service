@@ -9,7 +9,7 @@ import os
 main_dir = os.path.realpath('..')
 sys.path.append(main_dir)
 
-import utils.keyword_extraction as keyword_extraction
+import analysis.keyword_extraction as keyword_extraction
 
 import pymongo
 import thread
@@ -23,5 +23,5 @@ pool1 = ThreadPool(80)
 pool2 = ThreadPool(80)
 
 
-thread.start_new_thread(keyword_extraction.generate_user_keywords, (db, pool1,))
-thread.start_new_thread(keyword_extraction.generate_question_keywords, (db, pool2,))
+thread.start_new_thread(keyword_extraction.generate_users_keywords, (db, pool1,))
+thread.start_new_thread(keyword_extraction.generate_questions_keywords, (db, pool2,))
