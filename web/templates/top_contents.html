@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <link rel="icon" href="../../favicon.ico">
+
+  <title>Zhihu Analytics Service</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="{{ url_for('static', filename='bootstrap.min.css') }} " rel="stylesheet">
+  <!-- Bootstrap theme -->
+  <link href="{{ url_for('static', filename='bootstrap-theme.min.css') }} " rel="stylesheet">
+  <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+  <link href="{{ url_for('static', filename='ie10-viewport-bug-workaround.css') }}" rel="stylesheet">
+
+  <!-- Custom styles for this template -->
+  <link href="{{ url_for('static', filename='theme.css') }} " rel="stylesheet">
+
+  <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+  <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+  <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="{{url_for('static', filename = 'js/d3.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3.min.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3.node.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3-cloud-master/index.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/d3-cloud-master/build/d3.layout.cloud.js')}}"></script>
+</head>
+
+<body role="document">
+  <script>d3.select("body").style("background-color", "#333");</script>
+
+  <!-- Fixed navbar -->
+  <nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          <li {% if request.path == "/" %} class="active"{% endif%} ><a href="{{url_for('show_msg')}}">Home</a></li>
+          <li {% if request.path == "/users" %} class="active"{% endif%} class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu1" type="button" role="button" aria-haspopup="true"
+            aria-expanded="false">Top Users<span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu" aria-laeblledby="menu1">
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users', attri = 'top_10_agrees')}}">Top 10 Agrees</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_thanks')}}">Top 10 Thanks</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followers')}}">Top 10 Followers</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followees')}}">Top 10 Followees</a></li>
+            </ul>
+          </li>
+          <li {% if request.path == "/contents" %} class="active"{% endif%} class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu2" type="button" role="button" aria-haspopup="true"
+            aria-expanded="false">Top Contents<span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu" aria-laeblledby="menu2">
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_questions')}}">Top 10 Questions</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_answers')}}">Top 10 Answers</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_keywords')}}">Top Keywords</a></li>
+            </ul>
+          </li>
+          <li {% if request.path == "/about" %} class="active"{% endif%}><a href="{{url_for('show_about')}}">About</a></li>
+          <li {% if request.path == "/contact" %} class="active"{% endif%}><a href="{{url_for('show_contact')}}">Contact</a></li>
+          <li>
+            <form action="{{ url_for('add_person') }}" method=get class="navbar-form navbar-left">
+              <div class="form-group">
+                <input type="text" placeholder="Find User using UID or username" name = "UID" class="form-control">
+              </div>
+              <button type="submit" class="btn btn-primary">Find</button>
+            </form>
+          </li>
+        </ul>
+
+      </div><!--/.nav-collapse -->
+    </div>
+  </nav>
+
+  <div class="container theme-showcase" role="main">
+    <ul class=top>
+      <div style="background-color:#333"  class="jumbotron">
+        <h2 style="color:white" align = "center">{{ top.title }} Content</h2>
+        <h4 style="color:white" align = "center">The most popular questions and answers in Zhihu</h4>
+      </div>
+      <div class="panel panel-primary">
+        <div class="panel-body">
+          <ul class="list-group">
+            {% if top.attri == 'top_10_answers' %}
+            {% for d in top.contentlist %}
+            <li class="list-group-item">
+              <a href = "{{url_for('get_question', qid = d.qid)}}" method=get><h2 class="list-group-item-heading">{{d.title}}</h2></a>
+              <h3 class="list-group-item-heading">Number of Agrees: {{d.answers.agrees}}</h3>
+              <p class="list-group-item-text">{{d.answers.text}}</p>
+            </li>
+            {% endfor %}
+            {% else %}
+            {% for d in top.contentlist %}
+            <li class="list-group-item">
+              <a href = "{{url_for('get_question', qid = d.qid)}}" method=get><h2 class="list-group-item-heading">{{d.title}}</h2></a>
+              <h3 class="list-group-item-heading">Number of Answers: {{d.anum}}</h3>
+              <p class="list-group-item-text">{{d.question}}</p>
+            </li>
+            {% endfor %}
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </ul>
+  </div>
+
+  <!-- Bootstrap core JavaScript
+  ================================================== -->
+  <!-- Placed at the end of the document so the pages load faster -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="jquery.min.js"><\/script>')</script>
+  <script src="{{url_for('static', filename = 'js/bootstrap.min.js')}}"></script>
+  <script src="{{url_for('static', filename = 'js/docs.min.js')}}"></script>
+  <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+  <script src="{{url_for('static', filename = 'js/ie10-viewport-bug-workaround.js')}}"></script>
+</body>
+</html>

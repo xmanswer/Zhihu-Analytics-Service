@@ -1,0 +1,14 @@
+export var name = "d3";
+export var version = "4.0.0-alpha.40";
+export var publishConfig = {"tag":"next"};
+export var description = "Data-Driven Documents";
+export var keywords = ["dom","visualization","svg","animation","canvas"];
+export var homepage = "https://github.com/d3/d3";
+export var license = "BSD-3-Clause";
+export var author = {"name":"Mike Bostock","url":"https://bost.ocks.org/mike"};
+export var main = "build/d3.node.js";
+export var browser = "build/d3.js";
+export var repository = {"type":"git","url":"https://github.com/d3/d3.git"};
+export var scripts = {"pretest":"rm -rf build && mkdir build && json2module package.json > build/package.js && bin/rollup-node","test":"tape 'test/**/*-test.js'","prepublish":"npm run test && bin/rollup && uglifyjs build/d3.js -c -m -o build/d3.min.js","postpublish":"VERSION=`node -e 'console.log(require(\"./package.json\").version)'`; git push && cp -v build/d3.js ../d3.github.com/d3.v${VERSION}.js && cp -v build/d3.min.js ../d3.github.com/d3.v${VERSION}.min.js && cd ../d3.github.com && git add d3.v${VERSION}.js d3.v${VERSION}.min.js && git commit -m \"d3 ${VERSION}\" && git push && cd - && zip -j build/d3.zip -- LICENSE README.md build/d3.js build/d3.min.js"};
+export var devDependencies = {"json2module":"0.0","rollup":"0.26","rollup-plugin-node-resolve":"1","tape":"4","uglify-js":"2"};
+export var dependencies = {"d3-array":"0.7.1","d3-axis":"0.3.1","d3-collection":"0.1.2","d3-color":"0.4.2","d3-dispatch":"0.4.3","d3-drag":"0.1.2","d3-dsv":"0.3.2","d3-ease":"0.7.0","d3-force":"0.6.2","d3-format":"0.5.1","d3-hierarchy":"0.2.2","d3-interpolate":"0.7.0","d3-path":"0.1.5","d3-polygon":"0.2.1","d3-quadtree":"0.7.2","d3-queue":"2.0.3","d3-random":"0.2.1","d3-request":"0.4.6","d3-scale":"0.7.0","d3-selection":"0.7.2","d3-shape":"0.6.0","d3-time":"0.2.5","d3-time-format":"0.3.2","d3-timer":"0.4.3","d3-transition":"0.2.8","d3-voronoi":"0.3.2"};
