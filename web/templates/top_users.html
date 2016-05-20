@@ -70,15 +70,15 @@
             <ul class="dropdown-menu" role="menu" aria-laeblledby="menu2">
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_questions')}}">Top 10 Questions</a></li>
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_answers')}}">Top 10 Answers</a></li>
-              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_keywords')}}">Top Keywords</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_keywords')}}">Top Keywords</a></li>
             </ul>
           </li>
           <li {% if request.path == "/about" %} class="active"{% endif%}><a href="{{url_for('show_about')}}">About</a></li>
-          <li {% if request.path == "/contact" %} class="active"{% endif%}><a href="{{url_for('show_contact')}}">Contact</a></li>
           <li>
-            <form action="{{ url_for('add_person') }}" method=get class="navbar-form navbar-left">
+            <form action="{{ url_for('get_person') }}" method=get class="navbar-form navbar-left">
               <div class="form-group">
-                <input type="text" placeholder="Find User using UID or username" name = "UID" class="form-control">
+                <input type="text" placeholder="Find User using UID or username" name = "uid" class="form-control">
+                <input type="hidden" name="attri" value="timelines">
               </div>
               <button type="submit" class="btn btn-primary">Find</button>
             </form>
@@ -109,7 +109,7 @@
             <li class="list-group-item">
               <h3 class="list-group-item-heading">{{d}}</h3>
               <p class="list-group-item-text">
-                <a href = "{{url_for('add_person', UID = d)}}" method=get>
+                <a href = "{{url_for('get_person', uid = d, attri = 'timelines')}}" method=get>
                   <img src="{{url_for('show_figure', uid = d)}}" class="img-thumbnail" alt="user-fig">
                 </a>
               </p>
@@ -174,7 +174,7 @@
                 <div align = "center" class="col-sm-2">
                   <h2 class="list-group-item-heading" style = "color:white">{{d.name}}</h2>
                   <p class="list-group-item-text">
-                    <a href = "{{url_for('add_person', UID = d._id)}}" method=get>
+                    <a href = "{{url_for('get_person', uid = d._id, attri = 'timelines')}}" method=get>
                       <img src="{{url_for('show_figure', uid = d._id)}}" class="img-thumbnail" alt="user-fig">
                     </a>
                   </p>

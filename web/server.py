@@ -12,8 +12,9 @@ import json
 import pymongo
 import utils.zhihu_login as zhihu_login
 import classes.person as person
+import analysis.social_graph_analysis as social_graph_analysis
 from flask import Flask, request, session, g, redirect, url_for, \
-     abort, render_template, flash, send_file
+     abort, render_template, flash, send_file, Response, jsonify
 import thread
 #
 #try:
@@ -48,8 +49,6 @@ for glob in db.glob.find():
     d[glob['name']] = glob['value']
 d['total_users'] = db.users.count()
 d['total_questions'] = db.questions.count()
-
-
     
 @app.route("/")
 def show_msg():   
@@ -58,10 +57,11 @@ def show_msg():
             [{'$sample' : {'size' : 10} }]
         )]
     return render_template('layout.html', glob = d)
-
-@app.route('/add', methods=['GET'])
-def add_person():
-    uid = request.args['UID']
+    
+@app.route('/user', methods=['GET'])
+def get_person():
+    uid = request.args['uid']
+    user = db.users.find_one({'_id' : uid})
     if person.check_person(uid, db): #search for uid
         u = db.users.find_one({'_id' : uid})
     else: #no uid, search for user name
@@ -69,55 +69,12 @@ def add_person():
         top = dict()
         if u is None: #no user name
             top['attri'] = 'None'
-            thread.start_new_thread(person.crawl_person, (uid, zhihu_session, user_agents, proxies, db,))
+            #thread.start_new_thread(person.crawl_person, (uid, zhihu_session, user_agents, proxies, db,))
         else: #return list of users with this user name
             top['attri'] = 'Username'
             top['userlist'] = u['uids']
         return render_template('top_users.html', top = top)
-    
-    for i in range(len(u['timelines'])):
-        q = db.questions.find_one({'_id' : u['timelines'][i]['qid']})
-        if q is not None:
-            u['timelines'][i]['title'] = q['title']
-    
-    return render_template('show_user.html', user = u)
-    
-@app.route('/users', methods=['GET'])
-def get_top_users():
-    attri = request.args['attri']
-    strlist = attri.split('_')
-    title = ' '.join(strlist).title()
-    top = dict()
-    top['attri'] = attri
-    top['title'] = title
-    top['userlist'] = d[attri]
-    top['xdata'] = d['distributions']
-    top['xtype'] = strlist[2]
-    return render_template('top_users.html', top = top)
-
-@app.route('/contents', methods=['GET'])
-def get_top_contents():
-    attri = request.args['attri']
-    title = ' '.join(attri.split('_')).title()
-    top = dict()
-    top['attri'] = attri
-    top['title'] = title
-    top['contentlist'] = d[attri]
-    
-    return render_template('top_contents.html', top = top)
-
-@app.route('/keywords', methods=['GET'])
-def get_top_keywords():
-    data = []
-    for i in range(len(d['top_keywords'])):
-        size = (len(d['top_keywords']) - i) * (len(d['top_keywords']) - i) / (len(d['top_keywords']))
-        data.append({"text" : d['top_keywords'][i], "size" : size})
-    return render_template('top_keywords.html', data = data)
-    
-@app.route('/get', methods=['GET'])
-def get_text():
-    uid = request.args['uid']
-    user = db.users.find_one({'_id' : uid})
+        
     a = request.args['attri']
     user['attri'] = a
     if a == 'followees' or a == 'followers':
@@ -152,12 +109,44 @@ def get_text():
             for i in range(20):
                 data.append(NO_KEYWORDS[i%5])
         user['keywords'] = data
-
+        
     if a == 'update':
         thread.start_new_thread(person.update_person, (uid, zhihu_session, user_agents, proxies, db,))
     #return a
     #u = db.users.find_one({'_id' : session.get('uid')})
-    return render_template('show_more.html', user = user)
+    return render_template('show_person.html', user = user)
+    
+@app.route('/top_users', methods=['GET'])
+def get_top_users():
+    attri = request.args['attri']
+    strlist = attri.split('_')
+    title = ' '.join(strlist).title()
+    top = dict()
+    top['attri'] = attri
+    top['title'] = title
+    top['userlist'] = d[attri]
+    top['xdata'] = d['distributions']
+    top['xtype'] = strlist[2]
+    return render_template('top_users.html', top = top)
+
+@app.route('/top_contents', methods=['GET'])
+def get_top_contents():
+    attri = request.args['attri']
+    top = dict()
+    top['attri'] = attri
+    
+    if attri == 'top_keywords':
+        data = []
+        for i in range(len(d['top_keywords'])):
+            size = (len(d['top_keywords']) - i) * (len(d['top_keywords']) - i) / (len(d['top_keywords']))
+            data.append({"text" : d['top_keywords'][i], "size" : size})
+        top['data'] = data
+    else:
+        title = ' '.join(attri.split('_')).title()
+        top['title'] = title
+        top['contentlist'] = d[attri]
+    
+    return render_template('top_contents.html', top = top)
 
 @app.route('/question', methods=['GET'])
 def get_question():
@@ -175,6 +164,12 @@ def get_question():
     
     return render_template('show_question.html', data = question)
 
+@app.route('/get_json', methods=['GET'])
+def get_json():
+    uid = request.args['uid']
+    js = social_graph_analysis.get_first_order_connection_json(uid)
+    return jsonify(js)
+
 @app.route('/figure')
 def show_figure():
     uid = request.args.get('uid')
@@ -183,10 +178,6 @@ def show_figure():
 @app.route('/about')
 def show_about():
     return render_template('about.html')
-
-@app.route('/contact')
-def show_contact():
-    return render_template('contact.html')
 
 if __name__ == "__main__":
     if LOCAL:    

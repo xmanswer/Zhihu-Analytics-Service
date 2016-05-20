@@ -70,15 +70,15 @@
             <ul class="dropdown-menu" role="menu" aria-laeblledby="menu2">
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_questions')}}">Top 10 Questions</a></li>
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_10_answers')}}">Top 10 Answers</a></li>
-              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_keywords')}}">Top Keywords</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_contents', attri = 'top_keywords')}}">Top Keywords</a></li>
             </ul>
           </li>
           <li {% if request.path == "/about" %} class="active"{% endif%}><a href="{{url_for('show_about')}}">About</a></li>
-          <li {% if request.path == "/contact" %} class="active"{% endif%}><a href="{{url_for('show_contact')}}">Contact</a></li>
           <li>
-            <form action="{{ url_for('add_person') }}" method=get class="navbar-form navbar-left">
+            <form action="{{ url_for('get_person') }}" method=get class="navbar-form navbar-left">
               <div class="form-group">
-                <input type="text" placeholder="Find User using UID or username" name = "UID" class="form-control">
+                <input type="text" placeholder="Find User using UID or username" name = "uid" class="form-control">
+                <input type="hidden" name="attri" value="timelines">
               </div>
               <button type="submit" class="btn btn-primary">Find</button>
             </form>
@@ -91,6 +91,54 @@
 
   <div class="container theme-showcase" role="main">
     <ul class=top>
+      {% if top.attri == 'top_keywords'%}
+      <div style="background-color:#333"  class="jumbotron">
+        <h2 style="color:white" align = "center">Top Keywords</h2>
+        <h4 style="color:white" align = "center">
+          The most frequent metioned words in Zhihu questions and answers
+        </h4>
+      </div>
+      <p align="center">
+
+      </p>
+      <script>
+      d3.select("body").style("background-color", "#333");
+      var frequency_list = [];
+      {% for kw in top.data %}
+      frequency_list.push({"text" : {{kw.text|tojson}}, "size" : {{kw.size|tojson}}});
+      {% endfor %}
+      var color = d3.scale.category20();
+
+      d3.layout.cloud().size([1000, 1000])
+      .words(frequency_list)
+      .rotate(0)
+      .fontSize(function(d) { return d.size; })
+      .on("end", draw)
+      .start();
+
+      function draw(words) {
+        d3.select("body").select("p").append("svg")
+        .attr("width", 1500)
+        .attr("height", 800)
+        .attr("class", "wordcloud")
+        .append("g")
+        // without the transform, words words would get cutoff to the left and top, they would
+        // appear outside of the SVG area
+        .attr("transform", "translate(500,400)")
+        .selectAll("text")
+        .data(words)
+        .enter().append("text")
+        .style("font-size", function(d) { return d.size + "px"; })
+        .style("fill", function(d, i) { return color(i); })
+        .attr("transform", function(d) {
+          return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+        })
+        .text(function(d) { return d.text; });
+      }
+
+      </script>
+
+      {%else%}
       <div style="background-color:#333"  class="jumbotron">
         <h2 style="color:white" align = "center">{{ top.title }} Content</h2>
         <h4 style="color:white" align = "center">The most popular questions and answers in Zhihu</h4>
@@ -118,6 +166,7 @@
           </ul>
         </div>
       </div>
+      {% endif%}
     </ul>
   </div>
 
