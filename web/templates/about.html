@@ -53,7 +53,7 @@
       <div id="navbar" class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
           <li {% if request.path == "/" %} class="active"{% endif%} ><a href="{{url_for('show_msg')}}">Home</a></li>
-          <li {% if request.path == "/users" %} class="active"{% endif%} class="dropdown">
+          <li {% if request.path == "/top_users" %} class="active"{% endif%} class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu1" type="button" role="button" aria-haspopup="true"
             aria-expanded="false">Top Users<span class="caret"></span></a>
             <ul class="dropdown-menu" role="menu" aria-laeblledby="menu1">
@@ -63,7 +63,7 @@
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followees')}}">Top 10 Followees</a></li>
             </ul>
           </li>
-          <li {% if request.path == "/contents" %} class="active"{% endif%} class="dropdown">
+          <li {% if request.path == "/top_contents" %} class="active"{% endif%} class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu2" type="button" role="button" aria-haspopup="true"
             aria-expanded="false">Top Contents<span class="caret"></span></a>
             <ul class="dropdown-menu" role="menu" aria-laeblledby="menu2">

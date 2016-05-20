@@ -54,7 +54,7 @@
       <div id="navbar" class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
           <li {% if request.path == "/" %} class="active"{% endif%} ><a href="{{url_for('show_msg')}}">Home</a></li>
-          <li {% if request.path == "/users" %} class="active"{% endif%} class="dropdown">
+          <li {% if request.path == "/top_users" %} class="active"{% endif%} class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu1" type="button" role="button" aria-haspopup="true"
             aria-expanded="false">Top Users<span class="caret"></span></a>
             <ul class="dropdown-menu" role="menu" aria-laeblledby="menu1">
@@ -64,7 +64,7 @@
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followees')}}">Top 10 Followees</a></li>
             </ul>
           </li>
-          <li {% if request.path == "/contents" %} class="active"{% endif%} class="dropdown">
+          <li {% if request.path == "/top_contents" %} class="active"{% endif%} class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="menu2" type="button" role="button" aria-haspopup="true"
             aria-expanded="false">Top Contents<span class="caret"></span></a>
             <ul class="dropdown-menu" role="menu" aria-laeblledby="menu2">
@@ -251,16 +251,14 @@
         {% if user.attri == 'socialgraph'%}
         <p6></p6>
         <style>
-        .link {
-          fill: none;
-          stroke: #888;
-          stroke-width: 1.5px;
+        .node {
+          stroke: #fff;
+          stroke-width: 0.1px;
         }
-        .node circle
-        {
-          fill: steelblue;
-          stroke: blue;
-          stroke-width: 1.5px;
+
+        .link {
+          stroke: #999;
+          stroke-opacity: .6;
         }
         .node text
         {
@@ -270,37 +268,52 @@
         }
         </style>
         <script>
-        var uid = "{{user.uid}}";
+        var uid = "{{user.uid}}"
         var width = 1500,
         height = 1000
+
+        var color = d3.scale.category10();
+        var domain = [0,1,2,3]
+        color.domain(domain)
+
+        var force = d3.layout.force()
+        .charge(-500)
+        .linkDistance(200)
+        .gravity(.05)
+        .size([width, height]);
+
         var svg = d3.select("p6").append("svg")
         .attr("width", width)
         .attr("height", height);
-        var force = d3.layout.force()
-        .gravity(.05)
-        .distance(200)
-        .charge(-500)
-        .size([width, height]);
-        d3.json("/get_json?uid=" + uid, function(error, json) {
+
+        d3.json("/get_json?uid=" + uid, function(error, graph) {
+          if (error) throw error;
+
           force
-          .nodes(json.nodes)
-          .links(json.links)
+          .nodes(graph.nodes)
+          .links(graph.links)
           .start();
+
           var link = svg.selectAll(".link")
-          .data(json.links)
+          .data(graph.links)
           .enter().append("line")
-          .attr("class", "link");
+          .attr("class", "link")
+          .style("stroke-width", function(d) { return d.value; });
+
           var node = svg.selectAll(".node")
-          .data(json.nodes)
+          .data(graph.nodes)
           .enter().append("g")
           .attr("class", "node")
           .call(force.drag);
+
           node.append("circle")
-          .attr("r", 24);
+          .attr("r", 15).style("fill", function(d) { return color(d.group); });
+
           node.append("text")
-          .attr("dx", 50)
-          .attr("dy", ".35em")
+          .attr("dx", 20)
+          .attr("dy", ".15em")
           .text(function(d) { return d.name });
+
           force.on("tick", function()
           {
             link.attr("x1", function(d) { return d.source.x; })
