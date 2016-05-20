@@ -46,7 +46,7 @@ db = client.zhihu
 
 d = dict()
 for glob in db.glob.find():
-    d[glob['name']] = glob['value']
+    d[glob['_id']] = glob['value']
 d['total_users'] = db.users.count()
 d['total_questions'] = db.questions.count()
     
@@ -124,9 +124,11 @@ def get_top_users():
     top = dict()
     top['attri'] = attri
     top['title'] = title
-    top['userlist'] = d[attri]
+    top['userlist'] = [db.users.find_one({'_id' : uid}) for uid in d[attri]]
+    
     top['xdata'] = d['distributions']
     top['xtype'] = strlist[2]
+    
     return render_template('top_users.html', top = top)
 
 @app.route('/top_contents', methods=['GET'])

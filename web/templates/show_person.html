@@ -92,7 +92,7 @@
   <div class="container theme-showcase" role="main">
     <ul class=user>
       <div align="center" class="row">
-        <div class="col-md-6">
+        <div class="col-md-4">
           <h2 style="color:white" align="center">{{ user.name }}</h2>
           <img height="150" width="150" src="{{url_for('show_figure', uid = user.uid)}}" class="img-thumbnail" alt="user-fig">
           <div class="panel-body">
@@ -141,6 +141,28 @@
             <div class="panel-body">
               <h2>
                 <span class="label label-default">{{user.followers_num}}</span>
+              </h2>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="panel panel-primary">
+            <div class="panel-heading">
+              <h3 class="panel-title">PageRank</h3>
+            </div>
+            <div class="panel-body">
+              <h2>
+                <span class="label label-default">{{"%0.6f" % user.pageRank}}</span>
+              </h2>
+            </div>
+          </div>
+          <div class="panel panel-primary">
+            <div class="panel-heading">
+              <h3 class="panel-title">Quality</h3>
+            </div>
+            <div class="panel-body">
+              <h2>
+                <span class="label label-default">{{"%0.6f" % user.quality}}</span>
               </h2>
             </div>
           </div>

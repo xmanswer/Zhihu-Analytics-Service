@@ -3,6 +3,8 @@
 Created on Thu May 12 09:48:01 2016
 
 @author: minxu
+
+Analyze the keywords using multithreading for all users and questions
 """
 import sys
 import os

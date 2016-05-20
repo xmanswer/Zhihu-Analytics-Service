@@ -62,6 +62,8 @@
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_thanks')}}">Top 10 Thanks</a></li>
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followers')}}">Top 10 Followers</a></li>
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followees')}}">Top 10 Followees</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_pageRank')}}">Top 10 PageRank</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_quality')}}">Top 10 Quality</a></li>
             </ul>
           </li>
           <li {% if request.path == "/top_contents" %} class="active"{% endif%} class="dropdown">
@@ -173,6 +175,15 @@
                 {%endif%}
                 <div align = "center" class="col-sm-2">
                   <h2 class="list-group-item-heading" style = "color:white">{{d.name}}</h2>
+                  <h3>
+                    {%if top.xtype == 'followers'%}
+                    <span class="label label-default">{{d.followers_num}}</span>
+                    {%elif top.xtype == 'followees'%}
+                    <span class="label label-default">{{d.followees_num}}</span>
+                    {%else%}
+                    <span class="label label-default">{{d[top.xtype]}}</span>
+                    {%endif%}
+                  </h3>
                   <p class="list-group-item-text">
                     <a href = "{{url_for('get_person', uid = d._id, attri = 'timelines')}}" method=get>
                       <img src="{{url_for('show_figure', uid = d._id)}}" class="img-thumbnail" alt="user-fig">
@@ -198,7 +209,12 @@
 
         var data = {{top.xdata[top.xtype]|tojson}};
         var x = d3.scale.linear().domain([0, data.length]).range([0, width]);
-        var y = d3.scale.log().domain([1, data[0]]).range([height, 0]);
+        if ("{{top.xtype}}" == "pageRank" || "{{top.xtype}}" == "quality") {
+          var y = d3.scale.log().domain([1e-6, data[0]]).range([height, 0]);
+        } else {
+          var y = d3.scale.log().domain([1, data[0]]).range([height, 0]);
+        }
+
 
         // create a line function that can convert data[] into x and y points
         var line = d3.svg.line()
@@ -258,7 +274,7 @@
         .attr("text-anchor", "end")
         .attr("x", (width + margin.left) / 2+ margin.right)
         .attr("y", margin.top/4)
-        .text("Zipf's Law like distribution of {{top.xtype}}");
+        .text("Distribution of {{top.xtype}}");
         // Add the line by appending an svg:path element with the data line we created above
         // do this AFTER the axes above so that the line is above the tick-lines
         graph.append("svg:path").attr("d", line(data));
