@@ -21,8 +21,8 @@ from multiprocessing.pool import ThreadPool
 client = pymongo.MongoClient()
 db = client.zhihu
 
-pool1 = ThreadPool(60)
-pool2 = ThreadPool(60)
+pool1 = ThreadPool(20)
+pool2 = ThreadPool(20)
 
 
 thread.start_new_thread(keyword_extraction.generate_users_keywords, (db, pool1,))

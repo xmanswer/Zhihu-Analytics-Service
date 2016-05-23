@@ -62,6 +62,8 @@
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_thanks')}}">Top 10 Thanks</a></li>
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followers')}}">Top 10 Followers</a></li>
               <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_followees')}}">Top 10 Followees</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_pageRank')}}">Top 10 PageRank</a></li>
+              <li role="presetation"><a role="menuitem" tabindex="-1" href="{{url_for('get_top_users' , attri = 'top_10_quality')}}">Top 10 Quality</a></li>
             </ul>
           </li>
           <li {% if request.path == "/top_contents" %} class="active"{% endif%} class="dropdown">
