@@ -171,6 +171,42 @@
         </div>
       </div>
 
+      <div id="carousel-example-generic2" class="carousel slide" data-ride="carousel">
+        <ol class="carousel-indicators">
+          <li data-target="#carousel-example-generic2" data-slide-to="0" class="active"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="1"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="2"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="3"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="4"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="5"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="6"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="7"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="8"></li>
+          <li data-target="#carousel-example-generic2" data-slide-to="9"></li>
+        </ol>
+        <div class="carousel-inner" role="listbox">
+          <div align="center" class="item active">
+            <h2 style="color:white">Recommended Questions</h2>
+            <img height="300" width="300"  src="{{url_for('static', filename = 'figures/questions.gif')}}">
+          </div>
+          {%for d in user.top_questions%}
+          <div align="center" class="item">
+            <a href = "{{url_for('get_question', qid = d.qid)}}" method=get><h2 style="color:white">{{d.title}}</h2></a>
+            <h3 style="color:white">Number of Answers: {{d.anum}}</h3>
+            <img height="300" width="300"  src="{{url_for('static', filename = 'figures/questions.gif')}}">
+          </div>
+          {%endfor%}
+        </div>
+        <a class="left carousel-control" href="#carousel-example-generic2" role="button" data-slide="prev">
+          <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+          <span class="sr-only"></span>
+        </a>
+        <a class="right carousel-control" href="#carousel-example-generic2" role="button" data-slide="next">
+          <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+          <span class="sr-only"></span>
+        </a>
+      </div>
+
       <ul class="nav nav-pills">
         <li style="font-size:16x" {% if user.attri == 'timelines' %} class="active"{% endif%} role="presentation"><a href="{{ url_for('get_person', uid = user.uid, attri = 'timelines') }}">Timelines</a></li>
         <li style="font-size:16x" {% if user.attri == 'followees' %} class="active"{% endif%} role="presentation"><a href="{{ url_for('get_person', uid = user.uid, attri = 'followees') }}">Followees</a></li>

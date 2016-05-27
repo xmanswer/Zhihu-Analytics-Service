@@ -74,7 +74,12 @@ def get_person():
             top['attri'] = 'Username'
             top['userlist'] = u['uids']
         return render_template('top_users.html', top = top)
-        
+    
+    top_questions = []
+    for qid in user['top_questions']:
+        top_questions.append(db.questions.find_one({'_id' : qid}))
+    user['top_questions'] = top_questions
+    
     a = request.args['attri']
     user['attri'] = a
     if a == 'followees' or a == 'followers':
